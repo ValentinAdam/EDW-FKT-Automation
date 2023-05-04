@@ -5,7 +5,7 @@
 // void setup() 
 // {
 //     Serial.begin(115200);     //  initialize the serial port
-//     pinMode(PIN_Button, INPUT);
+//     pinMode(PIN_Button, INPUT_PULLUP);
 // }
 
 
