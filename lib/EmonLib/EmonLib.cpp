@@ -82,7 +82,7 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   while(1)                                   //the while loop...
   {
     startV = analogRead(inPinV);                    //using the voltage waveform
-    if ((startV < (ADC_COUNTS*0.55)) && (startV > (ADC_COUNTS*0.45))) break;  //check its within range
+    if ((startV < (ADC_COUNTS*0.51)) && (startV > (ADC_COUNTS*0.49))) break;  //check its within range    // Changed from 55 45
     if ((millis()-start)>timeout) break;
   }
 
