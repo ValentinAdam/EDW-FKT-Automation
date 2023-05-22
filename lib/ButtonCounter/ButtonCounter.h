@@ -7,9 +7,10 @@ class ButtonCounter
 {
     public:
         ButtonCounter(int pin);
+        void initialize();
         bool countButtonPresses(int requiredPresses, unsigned long timeout);
     private:
-        int pin;
+        int _pin;
 };
 
 #endif

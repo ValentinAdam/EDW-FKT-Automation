@@ -1,6 +1,14 @@
 #include "ButtonCounter.h"
 
-ButtonCounter::ButtonCounter(int pin) : pin(pin) {}
+ButtonCounter::ButtonCounter(int pin)
+{
+    _pin = pin;
+}
+
+void ButtonCounter::initialize()
+{
+    pinMode(_pin, INPUT_PULLUP);
+}
 
 bool ButtonCounter::countButtonPresses(int requiredPresses, unsigned long timeout) 
 {
@@ -9,7 +17,7 @@ bool ButtonCounter::countButtonPresses(int requiredPresses, unsigned long timeou
 
     while (true) 
     {
-        int button_state = digitalRead(pin);
+        int button_state = digitalRead(_pin);
         Serial.print("Button state == ");
         Serial.println(button_state);
         Serial.print("Counter increment is == ");
