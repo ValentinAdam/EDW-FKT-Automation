@@ -23,11 +23,13 @@ bool ButtonCounter::countButtonPresses(int requiredPresses, unsigned long timeou
         Serial.print("Counter increment is == ");
         Serial.println(count);
 
-        if(button_state == HIGH) 
+        // if(button_state == HIGH) 
+        if(button_state == LOW) 
         {
             Serial.println("The button is not pressed"); 
         } 
-        else if(button_state == LOW) 
+        // else if(button_state == LOW) 
+        else if(button_state == HIGH) 
         {
             Serial.println("The button is pressed");
             count++;

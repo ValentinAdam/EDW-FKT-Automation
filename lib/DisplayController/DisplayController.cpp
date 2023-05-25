@@ -107,6 +107,11 @@ void DisplayController::initialize()
     lcd.createChar(7, customL22);
 }
 
+void DisplayController::clear()
+{
+	lcd.clear();
+}
+
 
 void DisplayController::printPASS()
 {

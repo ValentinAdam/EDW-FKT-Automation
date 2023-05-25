@@ -3,14 +3,14 @@
 
 // #define PIN_Button_Count 13
 // #define Button_Count_Limit_Presses 10
-// #define Button_Count_Limit_Time 30000
+// #define Button_Count_Limit_Time 10000
 
 // ButtonCounter myButtonCounter(PIN_Button_Count);
 
 // void setup() 
 // {
 //     Serial.begin(115200);
-//     pinMode(PIN_Button_Count, INPUT_PULLUP);
+//     myButtonCounter.initialize();
 // }
 
 // void loop() 

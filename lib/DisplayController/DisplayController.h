@@ -8,6 +8,7 @@ class DisplayController
     public:
         DisplayController(int columns, int rows, int address);
         void initialize();
+        void clear();
         void printPASS();
         void printFAIL();
         void printFirstRow(const String& message);
