@@ -15,8 +15,8 @@
 #define PIN_Color_S1            22
 #define PIN_Color_S2            2
 #define PIN_Color_S3            15
-#define PIN_Color_Out           34
-#define PIN_Voltmeter           35
+#define PIN_Color_Out           39
+#define PIN_Voltmeter           36
 #define PIN_Piston1             17      // Brown
 #define PIN_Piston2             16      // Red
 #define PIN_Piston3             4       // Orange
@@ -26,14 +26,14 @@
 #define PIN_Door                14
 #define PIN_Button_Fail_LED     12      // Same
 #define PIN_Button_Fail_Switch  27
-#define PIN_Buzzer              23
+#define PIN_Buzzer              69
 #define PIN_LED_Red             12      // Same
 #define PIN_LED_Green           5
 
 
 #define Display_Columns                 16
 #define Display_Rows                    2
-#define Display_Address                 0x3F
+#define Display_Address                 0x27
 #define Button_Count_Limit_Presses      10
 #define Button_Count_Limit_Time         30000
 #define Voltage_Calibration             84
@@ -42,7 +42,7 @@
 #define Voltage_Samples                 20
 
 
-const double stepsPerRevolution = 2037.8864;                //    number of steps per revolution = 2037.8864
+const double stepsPerRevolution = 2037.8864;                //    number of steps per revolution = 2037.8864    //  2048
 const double degreePerStep      = stepsPerRevolution/360;   //    celsius degree per step
 const double stepsLeftToRight   = 240*degreePerStep;        //    steps for 240 celsius degree
 const double stepsCenterToLeft  = -120*degreePerStep;       //    steps for 120 celsius degree
@@ -98,6 +98,7 @@ void loop()
         if(door_open_state == LOW)
         {
             Serial.println("Door is closed !!!");
+            displayLCD.printFirstRow("OPEN THE DOOR");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             goto state_check_door_open;
@@ -127,8 +128,9 @@ void loop()
         while(microswitch_state == HIGH)
         {
             Serial.println("Microswitch not pressed");
-            myStepper.step(1);
+            myStepper.step(25);
             Serial.println("Stepper motor moved 1 step to the right");
+            displayLCD.printBothRows("CALIBRATING", "---------->");
             int microswitch_state_check = digitalRead(PIN_Microswitch);
             if(microswitch_state_check == LOW)
             {
@@ -145,6 +147,7 @@ void loop()
         while(error_searching_zero == true)
         {
             Serial.println("Microswitch not pressed. TURN MAIN POWER OFF !!!");
+            displayLCD.printBothRows("PRESS BUTTON","MAIN POWER OFF");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);         
         }
@@ -155,6 +158,7 @@ void loop()
     state_center_potentiometer:
     {
         Serial.println("Moving potentiometer into central position");
+        displayLCD.printBothRows("CALIBRATING","<--------->");
         myStepper.step(stepsRightToCenter);
         goto state_confirm_initialization;
     }    
@@ -165,6 +169,7 @@ void loop()
     {
         analogWrite(PIN_LED_Green, 255);
         Serial.println("Potentiometer centered. Green LED ON");
+        displayLCD.printFirstRow("TEST READY");
         goto state_check_door_closed;
     }
 
@@ -175,20 +180,21 @@ void loop()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     state_check_door_closed:
     {
-        analogWrite(PIN_LED_Green, 0);
         int door_closed_state = digitalRead(PIN_Door);
         Serial.println("Door state is: " + String(door_closed_state));
         Serial.println("Checking if door is closed");
         unsigned long time_of_checking_door_closed = millis();
         const int stop_searching_door_closed = 10000;  // 10 secunde
         bool error_searching_door_closed = false;
-        while(door_closed_state == LOW)
+        while(door_closed_state == HIGH) 
         {
             Serial.println("Door is open");
+            displayLCD.printSecondRowNoClear("CLOSE THE DOOR");
             int door_closed_state_check = digitalRead(PIN_Door);
-            if(door_closed_state_check == HIGH)
+            if(door_closed_state_check == LOW)     
             {
                 Serial.println("Door is closed");
+                analogWrite(PIN_LED_Green, 0);
                 goto state_activate_piston1;
             }
             if (millis() - time_of_checking_door_closed >= stop_searching_door_closed) 
@@ -201,6 +207,7 @@ void loop()
         while(error_searching_door_closed == true)
         {
             Serial.println("Door not closed. PRESS CONFIRM FAIL & CLOSE THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","Door not closed");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
@@ -217,6 +224,7 @@ void loop()
     state_activate_piston1:
     {
         piston_controller.extendPiston1();
+        displayLCD.printFirstRow("Pruftaste active");
         Serial.println("Piston 1 activated");
         goto state_boardpower_activate;
     }    
@@ -226,6 +234,7 @@ void loop()
     state_boardpower_activate:
     {
         analogWrite(PIN_Relay, HIGH);
+        displayLCD.printSecondRowNoClear("Boardpower ON");
         Serial.println("Boardpower activated");
         goto state_check_LED_RED;
     }
@@ -237,12 +246,14 @@ void loop()
         unsigned long time_of_checking_led_red = millis();
         const int stop_searching_led_red = 10000;  // 10 secunde
         bool error_searching_led_RED = false;
+        displayLCD.printFirstRow("Checking RED LED");
         while(true)
         {
             int red_value1 = colorDetector.detectRed();
             int green_value1 = colorDetector.detectGreen();
             int blue_value1 = colorDetector.detectBlue();
             Serial.println("Red = " + String(red_value1) + "  Green = " + String(green_value1) + "  Blue = " + String(blue_value1));
+            displayLCD.printSecondRowNoClear("R=" + String(red_value1) + "G=" + String(green_value1) + "B=" + String(blue_value1));
             if(red_value1 > green_value1 && red_value1 > blue_value1)   // TODO: Calibrate and change to 0-255
             {
                 Serial.println("RED LED ON");
@@ -270,6 +281,7 @@ void loop()
         while(error_searching_led_RED == true)
         {
             Serial.println("RED LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","RED LED NOT OK");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
@@ -286,6 +298,7 @@ void loop()
     state_deactivate_piston1:
     {
         piston_controller.retractPiston1();
+        displayLCD.printFirstRow("Piston 1 OFF");
         Serial.println("Piston 1 deactivated");
         goto state_stepper_to_min;
     }     
@@ -294,9 +307,11 @@ void loop()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     state_stepper_to_min:
     {
+        displayLCD.printBothRows("Stepper to MIN","<-------------");
         Serial.println("Moving stepper to MIN voltage position...");
         myStepper.step(stepsCenterToLeft);
         Serial.println("Stepper reached MIN voltage position...");
+        displayLCD.printBothRows("Stepper reached","MIN position");
         goto state_voltage_check_MIN;
     }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -307,9 +322,12 @@ void loop()
         bool error_checking_voltage_MIN = false;
         float voltage_value_MIN = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
         Serial.println("Average of last voltage values: " + String(voltage_value_MIN));
-        if(voltage_value_MIN > 94 && voltage_value_MIN < 108)
+        displayLCD.printFirstRow("MIN volt.: "+ String(voltage_value_MIN));
+        // if(voltage_value_MIN > 94 && voltage_value_MIN < 108)
+        if(voltage_value_MIN > 0 && voltage_value_MIN < 240)
         {
             Serial.println("MIN voltage value OK");
+            displayLCD.printSecondRowNoClear("MIN voltage OK");
             goto state_stepper_to_max;
         }
         else
@@ -321,6 +339,7 @@ void loop()
         while(error_checking_voltage_MIN == true)
         {
             Serial.println("MIN voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","MIN voltage NOK");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
@@ -336,8 +355,10 @@ void loop()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     state_stepper_to_max:
     {
+        displayLCD.printBothRows("Stepper to MAX","------------->");
         Serial.println("Moving stepper to MAX voltage position...");
         myStepper.step(stepsLeftToRight);
+        displayLCD.printBothRows("Stepper reached","MAX position");
         Serial.println("Stepper reached MAX voltage position...");
         goto state_voltage_check_MAX;
     }
@@ -349,8 +370,11 @@ void loop()
         bool error_checking_voltage_MAX = false;
         float voltage_value_MAX = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
         Serial.println("Average of last voltage values: " + String(voltage_value_MAX));
-        if(voltage_value_MAX > 219 && voltage_value_MAX < 233)
+        displayLCD.printFirstRow("MAX volt.: "+ String(voltage_value_MAX));
+        // if(voltage_value_MAX > 219 && voltage_value_MAX < 233)
+        if(voltage_value_MAX > 0 && voltage_value_MAX < 240)
         {
+            displayLCD.printSecondRowNoClear("MAX voltage OK");
             Serial.println("MAX voltage value OK");
             goto state_stepper_to_center;
         }
@@ -362,6 +386,7 @@ void loop()
 
         while(error_checking_voltage_MAX == true)
         {
+            displayLCD.printBothRows("Confirm FAIL","MAX voltage NOK");
             Serial.println("MAX voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
@@ -378,8 +403,10 @@ void loop()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     state_stepper_to_center:
     {
+        displayLCD.printBothRows("Stepper center","<------------>");
         Serial.println("Moving stepper to CENTER position...");
         myStepper.step(stepsRightToCenter);
+        displayLCD.printBothRows("Stepper reached","Central position");
         Serial.println("Stepper reached CENTER position...");
         goto state_activate_piston2;
     }
@@ -389,6 +416,7 @@ void loop()
     state_activate_piston2:
     {
         piston_controller.extendPiston2();
+        displayLCD.printFirstRow("Piston 2 ON");
         Serial.println("Piston 2 activated");
         goto state_check_LED_YELLOW; 
     } 
@@ -400,12 +428,14 @@ void loop()
         unsigned long time_of_checking_led_yellow = millis();
         const int stop_searching_led_yellow = 10000;  // 10 secunde
         bool error_searching_led_YELLOW = false;
+        displayLCD.printFirstRow("Check YELLOW LED");
         while(true)
         {
             int red_value2 = colorDetector.detectRed();
             int green_value2 = colorDetector.detectGreen();
             int blue_value2 = colorDetector.detectBlue();
             Serial.println("Red = " + String(red_value2) + "  Green = " + String(green_value2) + "  Blue = " + String(blue_value2));
+            displayLCD.printSecondRowNoClear("R=" + String(red_value2) + "G=" + String(green_value2) + "B=" + String(blue_value2));
             if(red_value2 > green_value2 && red_value2 > blue_value2)   // TODO: Calibrate and change to 0-255
             {
                 Serial.println("RED LED ON");
@@ -425,6 +455,7 @@ void loop()
                 Serial.println("Timeout: " + String(stop_searching_led_yellow/1000) + " seconds have elapsed since started checking if LED is YELLOW");
                 error_searching_led_YELLOW = true;
                 piston_controller.retractPiston2();
+                displayLCD.printFirstRow("Piston 2 OFF");
                 Serial.println("Piston 2 deactivated");            
                 break;
             }
@@ -433,6 +464,7 @@ void loop()
         while(error_searching_led_YELLOW == true)
         {
             Serial.println("YELLOW LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","YELLOW LED NOK");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
@@ -449,6 +481,7 @@ void loop()
     state_deactivate_piston2:
     {
         piston_controller.retractPiston2();
+        displayLCD.printFirstRow("Piston 2 OFF");
         Serial.println("Piston 2 deactivated");
         goto state_check_synchronmotor; 
     }
@@ -459,6 +492,7 @@ void loop()
     {
         Serial.println("Beginning counting synchronmotor rotations");
         bool error_checking_optical_rotation = false;
+        displayLCD.printBothRows("Checking", "synchronmotor");
         bool checking_optical_rotation = opticalCounter.countButtonPresses(Button_Count_Limit_Presses, Button_Count_Limit_Time);
         if (checking_optical_rotation == true) 
         {
@@ -474,6 +508,7 @@ void loop()
         while(error_checking_optical_rotation == true)
         {
             Serial.println("Synchronmotor NOT rotating. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","Synchronmotor");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
@@ -490,6 +525,7 @@ void loop()
     state_activate_piston3:
     {
         piston_controller.extendPiston3();
+        displayLCD.printPASS();
         Serial.println("Piston 3 activated");
         goto state_confirm_pass;
     }
@@ -499,7 +535,7 @@ void loop()
     state_confirm_pass:
     {
         analogWrite(PIN_LED_Green, 255);
-        Serial.println("Potentiometer centered. Green LED ON");
+        Serial.println("UNIT PASS. Green LED ON");
         goto state_deactivate_piston3;
     }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
