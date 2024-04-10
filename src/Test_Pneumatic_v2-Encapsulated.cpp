@@ -1,9 +1,9 @@
 // #include <Arduino.h>
 // #include "PistonController.h"
 
-// #define PIN_Piston1     32    // Brown
-// #define PIN_Piston2     33    // Red
-// #define PIN_Piston3     25    // Orange
+// #define PIN_Piston1     17    // Brown
+// #define PIN_Piston2     16    // Red
+// #define PIN_Piston3     4    // Orange
 
 // PistonController piston_controller(PIN_Piston1, PIN_Piston2, PIN_Piston3);
 

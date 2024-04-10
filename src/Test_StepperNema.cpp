@@ -7,8 +7,8 @@
 // #define PIN_Stepper3    25
 // #define PIN_Stepper4    26
 
-// // const double stepsPerRevolution = 200;                      //    number of steps per revolution
-// const double stepsPerRevolution = 48;                      //    number of steps per revolution
+// const double stepsPerRevolution = 200;                      //    number of steps per revolution
+// // const double stepsPerRevolution = 48;                      //    number of steps per revolution
 // const double degreePerStep      = stepsPerRevolution/360;   //    celsius degree per step
 // const double stepsLeftToRight   = -240*degreePerStep;        //    steps for 240 celsius degree
 // const double stepsCenterToLeft  = 120*degreePerStep;       //    steps for 120 celsius degree
