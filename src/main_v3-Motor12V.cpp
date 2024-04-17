@@ -113,7 +113,7 @@ void loop()
             Serial.println("Door is open !!!");
             analogWrite(PIN_Buzzer, 0);
             analogWrite(PIN_LED_Red, 0);
-            goto state_search_zero;        
+            goto state_search_zero;
         }
     }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ void loop()
                 Serial.println("Microswitch is pressed");
                 goto state_center_potentiometer;
             }
-            if (millis() - time_of_searching_zero >= stop_searching_zero) 
+            if (millis() - time_of_searching_zero >= stop_searching_zero)
             {
                 Serial.println("Timeout: " + String(stop_searching_zero/1000) + " seconds have elapsed since started searching for zero point");
                 error_searching_zero = true;
@@ -155,7 +155,7 @@ void loop()
             Serial.println("Microswitch not pressed. TURN MAIN POWER OFF !!!");
             displayLCD.printBothRows("PRESS BUTTON","MAIN POWER OFF");
             analogWrite(PIN_Buzzer, 255);
-            analogWrite(PIN_LED_Red, 255);         
+            analogWrite(PIN_LED_Red, 255);
         }
     }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
