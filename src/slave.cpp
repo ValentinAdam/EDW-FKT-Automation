@@ -3,8 +3,9 @@
 #include "ButtonCounter.h"
 #include "VoltageSensor.h"
 #include "Stepper.h"
+#include "Communication.h"
 
-
+#define PIN_ADC                 34
 #define PIN_Stepper1            32
 #define PIN_Stepper2            33
 #define PIN_Stepper3            25
@@ -46,6 +47,8 @@ ButtonCounter opticalCounter(PIN_Optical_Count);
 
 void setup()
 {
+    int adcValue = adc1_get_raw(ADC1_CHANNEL_6);
+    float packet = adcValue * (3.3 / 4095);
     Serial.begin(115200);
     myStepper.setSpeed(60);   //  stepper speed in rpm
     colorDetector.initialize();
@@ -66,6 +69,9 @@ void setup()
 
 void loop()
 {
+
+
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////    Dupa verificare senzor usa deschisa                 -->     Rotire potentiometru spre "0"                       (STEPPER MOTOR)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +97,7 @@ void loop()
             if(microswitch_state_check == LOW)
             {
                 Serial.println("Microswitch is pressed");
-                goto state_center_potentiometer;
+                Communication::dac_tx_potCentered();
             }
             if (millis() - time_of_searching_zero >= stop_searching_zero)
             {
@@ -103,13 +109,6 @@ void loop()
         while(error_searching_zero == true)
         {
             Serial.println("Microswitch not pressed. TURN MAIN POWER OFF !!!");
-            displayLCD.printBothRows("PRESS BUTTON","MAIN POWER OFF");
-            analogWrite(PIN_Buzzer, 255);
-            analogWrite(PIN_LED_Red, 255);
+            Communication::dac_tx_potCalibNOK();
         }
     }
-
-
-
-
-}

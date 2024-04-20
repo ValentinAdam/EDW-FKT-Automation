@@ -2,7 +2,9 @@
 #include "DisplayController.h"
 #include "ButtonCounter.h"
 #include "PistonController.h"
+#include <driver/dac.h>
 
+#define PIN_DAC                 25
 #define PIN_Piston1             17      // Brown
 #define PIN_Piston2             16      // Red
 #define PIN_Piston3             4       // Orange
@@ -47,6 +49,8 @@ void setup()
     piston_controller.retractPiston1();
     piston_controller.retractPiston2();
     piston_controller.retractPiston3();
+    dac_output_enable(DAC_CHANNEL_1);
+
 }
 
 void loop()
@@ -75,6 +79,29 @@ void loop()
             goto state_search_zero;
         }
     }
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////    Dupa verificare senzor usa deschisa                 -->     Rotire potentiometru spre "0"                       (STEPPER MOTOR)
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////    In timpul rotirii potentiometrului                  -->     Verificare pozitie de "0"                           (MICROSWITCH)
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    state_search_zero:
+    {
+        Serial.println("Beginning searching the zero point");
+        Communication::dac_tx_potCalib();
+        int result = 
+        while(error_searching_zero == true)
+        {
+            Serial.println("Microswitch not pressed. TURN MAIN POWER OFF !!!");
+            displayLCD.printBothRows("PRESS BUTTON","MAIN POWER OFF");
+            analogWrite(PIN_Buzzer, 255);
+            analogWrite(PIN_LED_Red, 255);
+        }
+    }
+
+
+
+
 
 
 
