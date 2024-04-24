@@ -1,11 +1,11 @@
 #ifndef Communication_H
 #define Communication_H
-
 #include <Arduino.h>
 
 class Communication
 {
     public:
+        Communication();
         void dac_tx_sync();
         void dac_tx_potCalib();
         void dac_tx_potCentered();
@@ -25,6 +25,8 @@ class Communication
         void dac_tx_checkSincromotor();
         void dac_tx_sincromotorOK();
         void dac_tx_sincromotorNOK();
+        int adc_rx();
     private:
+        
 };
 #endif;

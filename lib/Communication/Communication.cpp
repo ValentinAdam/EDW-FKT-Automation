@@ -1,6 +1,14 @@
 #include "Communication.h"
+#include <driver/dac.h>
+#include <driver/adc.h>
+#include <Arduino.h>
 
-
+Communication::Communication()
+{
+    dac_output_enable(DAC_CHANNEL_1);
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11);
+}
 
 void Communication::dac_tx_sync()
 {
@@ -152,4 +160,10 @@ void Communication::dac_tx_sincromotorNOK()
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
     delay(500);    
+}
+
+int Communication::adc_rx()
+{
+    int adcValue = adc1_get_raw(ADC1_CHANNEL_6);
+    return adcValue;
 }

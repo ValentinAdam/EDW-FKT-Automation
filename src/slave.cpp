@@ -1,11 +1,14 @@
 #include <Arduino.h>
+#include <driver/adc.h>
+#include <driver/dac.h>
 #include "ColorDetector.h"
 #include "ButtonCounter.h"
 #include "VoltageSensor.h"
 #include "Stepper.h"
 #include "Communication.h"
 
-#define PIN_ADC                 34
+#define DAC_PIN                 25
+#define ADC_PIN                 34
 #define PIN_Stepper1            32
 #define PIN_Stepper2            33
 #define PIN_Stepper3            25
@@ -25,7 +28,7 @@
 #define Voltage_Phase_Shift             1.7
 #define Voltage_Measurements            80
 #define Voltage_Samples                 20
-
+volatile int command = 0;
 
 // const double stepsPerRevolution = 2037.8864;                //    number of steps per revolution = 2037.8864    //  2048
 // const double degreePerStep      = stepsPerRevolution/360;   //    celsius degree per step
@@ -43,18 +46,21 @@ Stepper myStepper(stepsPerRevolution, PIN_Stepper1, PIN_Stepper2, PIN_Stepper3, 
 ColorDetector colorDetector(PIN_Color_S0, PIN_Color_S1, PIN_Color_S2, PIN_Color_S3, PIN_Color_Out);
 VoltageSensor voltage_monitor(PIN_Voltmeter, Voltage_Calibration, Voltage_Phase_Shift);
 ButtonCounter opticalCounter(PIN_Optical_Count);
-
+Communication communication;
 
 void setup()
 {
-    int adcValue = adc1_get_raw(ADC1_CHANNEL_6);
-    float packet = adcValue * (3.3 / 4095);
     Serial.begin(115200);
     myStepper.setSpeed(60);   //  stepper speed in rpm
     colorDetector.initialize();
     opticalCounter.initialize();
     pinMode(PIN_Microswitch, INPUT_PULLUP);
-    
+    while(command != 0 )
+    {
+        command = communication.adc_rx();//interogam adc-ul 
+        delay(50);
+    }
+    communication.dac_tx_sync();
 }
 
 
@@ -69,8 +75,34 @@ void setup()
 
 void loop()
 {
+    command = 0;
+    while(command == 0)
+    {
+        command = communication.adc_rx();
+    }
+    switch (command)
+    {
+        case 100:
+            pot_calib();
+            break;
+        case 250:
+            check_red_led();
+            break;
+        case 400:
+            check_min_volt();
+            break;
+        case 550:
+            check_max_volt();
+            break;
+        case 700:
+            check_yellow_led();
+            break;
+        case 850:
+            check_syncromotor();
+            break;
 
-
+    }
+    
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////    Dupa verificare senzor usa deschisa                 -->     Rotire potentiometru spre "0"                       (STEPPER MOTOR)
@@ -78,7 +110,7 @@ void loop()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////    In timpul rotirii potentiometrului                  -->     Verificare pozitie de "0"                           (MICROSWITCH)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    state_search_zero:
+void pot_calib()
     {
         Serial.println("Beginning searching the zero point");
         int microswitch_state = digitalRead(PIN_Microswitch);
@@ -92,12 +124,12 @@ void loop()
             // myStepper.step(25);
             myStepper.step(-10);
             Serial.println("Stepper motor moved 1 step to the right");
-            displayLCD.printBothRows("CALIBRATING", "---------->");
+            //displayLCD.printBothRows("CALIBRATING", "---------->");
             int microswitch_state_check = digitalRead(PIN_Microswitch);
             if(microswitch_state_check == LOW)
             {
                 Serial.println("Microswitch is pressed");
-                Communication::dac_tx_potCentered();
+                communication.dac_tx_potCentered();
             }
             if (millis() - time_of_searching_zero >= stop_searching_zero)
             {
@@ -109,6 +141,6 @@ void loop()
         while(error_searching_zero == true)
         {
             Serial.println("Microswitch not pressed. TURN MAIN POWER OFF !!!");
-            Communication::dac_tx_potCalibNOK();
+            communication.dac_tx_potCalibNOK();
         }
     }
