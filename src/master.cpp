@@ -61,8 +61,8 @@ void setup()
         displayLCD.printFirstRow("CONECTARE SLAVE");
     }
     displayLCD.printFirstRow("SLAVE CONECTAT");
-    delay(500);
-
+    delay(800);
+    returned = 0;
 }
 
 void loop()
@@ -101,19 +101,23 @@ void loop()
 state_search_zero:
     {
         communication.dac_tx_potCalib();
+        delay(300);
         while(returned == 0)
         {
             returned = communication.adc_rx();
-            delay(50);
+            delay(5);
         }
-        if(returned == 150)
+        if(returned == 20)
         {
-            //display error
+            returned = 0;
+            goto state_check_door_open;
         }
-        else if(returned == 200)
+        else if(returned == 15)
         {
             //display pass, goto next
+            returned = 0;
             goto check_door_closed;
+
         }
         
     }
@@ -171,78 +175,90 @@ state_search_zero:
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa verificare usa inchisa                         -->     Activare piston "Pruftaste"                         (PISTON 1)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_activate_piston1:
-//     {
-//         piston_controller.extendPiston1();
-//         delay(2000);
-//         displayLCD.printFirstRow("Pruftaste active");
-//         Serial.println("Piston 1 activated");
-//         goto state_boardpower_activate;
-//     }    
+    state_activate_piston1:
+    {
+        piston_controller.extendPiston1();
+        delay(500);
+        displayLCD.printFirstRow("Pruftaste active");
+        Serial.println("Piston 1 activated");
+        goto state_boardpower_activate;
+    }    
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa activare piston "Pruftaste"                    -->     Comutare releu "Boardpower"                         (RELEU BOARDPOWER)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_boardpower_activate:
-//     {
-//         analogWrite(PIN_Relay, 255);
-//         delay(2000);
-//         displayLCD.printSecondRowNoClear("Boardpower ON");
-//         Serial.println("Boardpower activated");
-//         goto state_check_LED_RED;
-//     }
+    state_boardpower_activate:
+    {
+        analogWrite(PIN_Relay, 255);
+        delay(2000);
+        displayLCD.printSecondRowNoClear("Boardpower ON");
+        Serial.println("Boardpower activated");
+        goto state_check_LED_RED;
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa comutare releu "Boardpower"                    -->     Verificare culoare rosie LED                        (SENZOR CULOARE)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_check_LED_RED:
-//     {
-//         unsigned long time_of_checking_led_red = millis();
-//         const int stop_searching_led_red = 10000;  // 10 secunde
-//         bool error_searching_led_RED = false;
-//         displayLCD.printFirstRow("Checking RED LED");
-//         while(true)
-//         {
-//             int red_value1 = colorDetector.detectRed();
-//             int green_value1 = colorDetector.detectGreen();
-//             int blue_value1 = colorDetector.detectBlue();
-//             Serial.println("Red = " + String(red_value1) + "  Green = " + String(green_value1) + "  Blue = " + String(blue_value1));
-//             displayLCD.printSecondRowNoClear("R=" + String(red_value1) + "G=" + String(green_value1) + "B=" + String(blue_value1));
-//             if(red_value1 > green_value1 && red_value1 > blue_value1)   // TODO: Calibrate and change to 0-255
-//             {
-//                 Serial.println("RED LED ON");
-//                 goto state_deactivate_piston1;
-//             }
-//             else if (red_value1 > blue_value1 && green_value1 > blue_value1)
-//             {
-//                 Serial.println("YELLOW LED ON");
-//             }
-//             else
-//             {
-//                 Serial.println("Unknown color");
-//             }
+    state_check_LED_RED:
+    {
+        bool error_searching_led_RED = false;
+        displayLCD.printFirstRow("Checking RED LED");
+        communication.dac_tx_checkRedLED();
+        while(returned == 0)
+        {
+            returned = communication.adc_rx();
+            delay(5);
+        }
+        if(returned == 30)
+        {
+            piston_controller.retractPiston1();
+        } 
+        else if(returned == 35)
+        {
+            error_searching_led_RED = True;
+        }
+    //     while(true)
+    //     {
+    //         int red_value1 = colorDetector.detectRed();
+    //         int green_value1 = colorDetector.detectGreen();
+    //         int blue_value1 = colorDetector.detectBlue();
+    //         Serial.println("Red = " + String(red_value1) + "  Green = " + String(green_value1) + "  Blue = " + String(blue_value1));
+    //         displayLCD.printSecondRowNoClear("R=" + String(red_value1) + "G=" + String(green_value1) + "B=" + String(blue_value1));
+    //         if(red_value1 > green_value1 && red_value1 > blue_value1)   // TODO: Calibrate and change to 0-255
+    //         {
+    //             Serial.println("RED LED ON");
+    //             goto state_deactivate_piston1;
+    //         }
+    //         else if (red_value1 > blue_value1 && green_value1 > blue_value1)
+    //         {
+    //             Serial.println("YELLOW LED ON");
+    //         }
+    //         else
+    //         {
+    //             Serial.println("Unknown color");
+    //         }
 
-//             if (millis() - time_of_checking_led_red >= stop_searching_led_red) 
-//             {
-//                 Serial.println("Timeout: " + String(stop_searching_led_red/1000) + " seconds have elapsed since started checking if LED is RED");
-//                 error_searching_led_RED = true;
-//                 piston_controller.retractPiston1();
-//                 Serial.println("Piston 1 deactivated");            
-//                 break;
-//             }
-//         }
+    //         if (millis() - time_of_checking_led_red >= stop_searching_led_red) 
+    //         {
+    //             Serial.println("Timeout: " + String(stop_searching_led_red/1000) + " seconds have elapsed since started checking if LED is RED");
+    //             error_searching_led_RED = true;
+    //             piston_controller.retractPiston1();
+    //             Serial.println("Piston 1 deactivated");            
+    //             break;
+    //         }
+    //     }
 
-//         while(error_searching_led_RED == true)
-//         {
-//             Serial.println("RED LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             displayLCD.printBothRows("Confirm FAIL","RED LED NOT OK");
-//             analogWrite(PIN_Buzzer, 255);
-//             analogWrite(PIN_LED_Red, 255);
-//             analogWrite(PIN_Button_Fail_LED, 255);
-//             if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
-//             {
-//                 Serial.println("Fail confirmed");
-//                 goto state_boardpower_deactivate;
-//             }         
-//         }
+        while(error_searching_led_RED == true)
+        {
+            Serial.println("RED LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","RED LED NOT OK");
+            analogWrite(PIN_Buzzer, 255);
+            analogWrite(PIN_LED_Red, 255);
+            analogWrite(PIN_Button_Fail_LED, 255);
+            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            {
+                Serial.println("Fail confirmed");
+                goto state_boardpower_deactivate;
+            }         
+        }
 //     }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa verificare LED rosu                            -->     Dezactivare piston "Pruftaste"                      (PISTON 1)

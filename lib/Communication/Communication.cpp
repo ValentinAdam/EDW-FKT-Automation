@@ -12,158 +12,141 @@ Communication::Communication()
 
 void Communication::dac_tx_sync()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 50);
+    dac_output_voltage(DAC_CHANNEL_1, 5);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);
 }
 
 void Communication::dac_tx_potCalib()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 100);
+    dac_output_voltage(DAC_CHANNEL_1, 10);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_potCentered()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 150);
+    dac_output_voltage(DAC_CHANNEL_1, 15);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_potCalibNOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 200);
+    dac_output_voltage(DAC_CHANNEL_1, 20);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_checkRedLED()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 250);
+    dac_output_voltage(DAC_CHANNEL_1, 25);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_redLEDOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 300);
+    dac_output_voltage(DAC_CHANNEL_1, 30);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_redLEDNOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 350);
+    dac_output_voltage(DAC_CHANNEL_1, 35);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_checkMinVoltage()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 400);
+    dac_output_voltage(DAC_CHANNEL_1, 40);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_minVoltageOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 450);
+    dac_output_voltage(DAC_CHANNEL_1, 45);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_minVoltageNOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 500);
+    dac_output_voltage(DAC_CHANNEL_1, 50);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_checkMaxVoltage()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 550);
+    dac_output_voltage(DAC_CHANNEL_1, 55);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_maxVoltageOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 600);
+    dac_output_voltage(DAC_CHANNEL_1, 60);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_maxVoltageNOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 650);
+    dac_output_voltage(DAC_CHANNEL_1, 65);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_checkYellowLED()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 700);
+    dac_output_voltage(DAC_CHANNEL_1, 70);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_yellowLEDOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 750);
+    dac_output_voltage(DAC_CHANNEL_1, 75);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_yellowLEDNOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 800);
+    dac_output_voltage(DAC_CHANNEL_1, 80);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_checkSincromotor()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 850);
+    dac_output_voltage(DAC_CHANNEL_1, 85);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_sincromotorOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 900);
+    dac_output_voltage(DAC_CHANNEL_1, 90);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 void Communication::dac_tx_sincromotorNOK()
 {
-    dac_output_voltage(DAC_CHANNEL_1, 950);
+    dac_output_voltage(DAC_CHANNEL_1, 95);
     delay(500);
     dac_output_voltage(DAC_CHANNEL_1, 0);
-    delay(500);    
 }
 
 int Communication::adc_rx()
 {
     int adcValue = adc1_get_raw(ADC1_CHANNEL_6);
-    return adcValue;
+    int convert = adcValue / 15;
+    int packet = round(convert);
+    return packet;
 }

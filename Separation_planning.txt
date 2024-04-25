@@ -71,41 +71,41 @@ Atribuire valori pentru fiecare actiune
 ==============================================
 Actiune/Status             |   Valoare DAC   |  
 ===========================|=================|       
-Test Power On / Sync       |       50        |           
+Test Power On / Sync       |       5         |           
 ===========================|=================|
-Start potentiometer calib. |       100       |
+Start potentiometer calib. |       10        |
 ===========================|=================|
-Confirm pot. calib.        |       150       |
+Confirm pot. calib.        |       15        |
 ===========================|=================|
-Pot. calib. NOK            |       200       |
+Pot. calib. NOK            |       20        |
 ===========================|=================|
-Start red LED check        |       250       |
+Start red LED check        |       25        |
 ===========================|=================|
-Red LED OK                 |       300       |
+Red LED OK                 |       30        |
 ===========================|=================|
-Red LED NOK                |       350       |
+Red LED NOK                |       35        |
 ===========================|=================|
-Check min Voltage          |       400       |
+Check min Voltage          |       40        |
 ===========================|=================|
-Min Voltage OK             |       450       |
+Min Voltage OK             |       45        |
 ===========================|=================|
-Min Voltage NOK            |       500       |
+Min Voltage NOK            |       50        |
 ===========================|=================|
-Check max Voltage          |       550       |
+Check max Voltage          |       55        |
 ===========================|=================|
-Max Voltage OK             |       600       |
+Max Voltage OK             |       60        |
 ===========================|=================|
-Max Voltage NOK            |       650       |
+Max Voltage NOK            |       65        |
 ===========================|=================|
-Check Yellow LED           |       700       |
+Check Yellow LED           |       70        |
 ===========================|=================|
-Yellow LED OK              |       750       |
+Yellow LED OK              |       75        |
 ===========================|=================|
-Yellow LED NOK             |       800       |
+Yellow LED NOK             |       80        |
 ===========================|=================|
-Check sincromotor          |       850       |
+Check sincromotor          |       85        |
 ===========================|=================|
-Sincromotor OK             |       900       |
+Sincromotor OK             |       90        |
 ===========================|=================|
-Sincromotor NOK            |       950       |
+Sincromotor NOK            |       95        |
 ==============================================

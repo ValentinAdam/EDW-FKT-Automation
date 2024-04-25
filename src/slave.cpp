@@ -55,21 +55,13 @@ void setup()
     colorDetector.initialize();
     opticalCounter.initialize();
     pinMode(PIN_Microswitch, INPUT_PULLUP);
-    while(command != 0 )
+    while(command == 0 )
     {
         command = communication.adc_rx();//interogam adc-ul 
         delay(50);
     }
     communication.dac_tx_sync();
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -82,22 +74,22 @@ void loop()
     }
     switch (command)
     {
-        case 100:
+        case 10:
             pot_calib();
             break;
-        case 250:
+        case 25:
             check_red_led();
             break;
-        case 400:
+        case 40:
             check_min_volt();
             break;
-        case 550:
+        case 55:
             check_max_volt();
             break;
-        case 700:
+        case 70:
             check_yellow_led();
             break;
-        case 850:
+        case 85:
             check_syncromotor();
             break;
 
@@ -129,6 +121,7 @@ void pot_calib()
             if(microswitch_state_check == LOW)
             {
                 Serial.println("Microswitch is pressed");
+                myStepper.step(stepsRightToCenter);
                 communication.dac_tx_potCentered();
             }
             if (millis() - time_of_searching_zero >= stop_searching_zero)
@@ -144,3 +137,41 @@ void pot_calib()
             communication.dac_tx_potCalibNOK();
         }
     }
+void check_red_led()
+{
+    unsigned long time_of_checking_led_red = millis();
+    const int stop_searching_led_red = 10000;  // 10 secunde
+    bool error_searching_led_RED = false;
+    //displayLCD.printFirstRow("Checking RED LED");
+    while(true)
+    {
+        int red_value1 = colorDetector.detectRed();
+        int green_value1 = colorDetector.detectGreen();
+        int blue_value1 = colorDetector.detectBlue();
+        Serial.println("Red = " + String(red_value1) + "  Green = " + String(green_value1) + "  Blue = " + String(blue_value1));
+        //displayLCD.printSecondRowNoClear("R=" + String(red_value1) + "G=" + String(green_value1) + "B=" + String(blue_value1));
+        if(red_value1 > green_value1 && red_value1 > blue_value1)   // TODO: Calibrate and change to 0-255
+        {
+            Serial.println("RED LED ON");
+            communication.dac_tx_redLEDOK();
+        }
+        else if (red_value1 > blue_value1 && green_value1 > blue_value1)
+        {
+            Serial.println("YELLOW LED ON");
+            communication.dac_tx_redLEDNOK();
+        }
+        else
+        {
+            Serial.println("Unknown color");
+        }
+        if (millis() - time_of_checking_led_red >= stop_searching_led_red) 
+        {
+            Serial.println("Timeout: " + String(stop_searching_led_red/1000) + " seconds have elapsed since started checking if LED is RED");
+            error_searching_led_RED = true;
+            communication.dac_tx_redLEDNOK();
+            //piston_controller.retractPiston1();
+            Serial.println("Piston 1 deactivated");
+            break;
+        }
+    }
+}
