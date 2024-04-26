@@ -63,6 +63,8 @@ Atribuire GPIO:
 #define PIN_LED_Red           |  12  |                           |   X   |       |
 ==============================|======|===========================|=======|=======|
 #define PIN_LED_Green         |  5   |                           |   X   |       |
+==============================|======|===========================|=======|=======|
+#define PIN_regionSel         |  13  |                           |       |   X   |
 ==================================================================================
 
 
@@ -71,41 +73,41 @@ Atribuire valori pentru fiecare actiune
 ==============================================
 Actiune/Status             |   Valoare DAC   |  
 ===========================|=================|       
-Test Power On / Sync       |       5         |           
+dac_tx_sync                |       5         |           
 ===========================|=================|
-Start potentiometer calib. |       10        |
+dac_tx_potCalib            |       10        |
 ===========================|=================|
-Confirm pot. calib.        |       15        |
+dac_tx_potCentered         |       15        |
 ===========================|=================|
-Pot. calib. NOK            |       20        |
+dac_tx_potCalibNOK         |       20        |
 ===========================|=================|
-Start red LED check        |       25        |
+dac_tx_checkRedLED         |       25        |
 ===========================|=================|
-Red LED OK                 |       30        |
+dac_tx_redLEDOK            |       30        |
 ===========================|=================|
-Red LED NOK                |       35        |
+dac_tx_redLEDNOK           |       35        |
 ===========================|=================|
-Check min Voltage          |       40        |
+dac_tx_checkMinVoltage     |       40        |
 ===========================|=================|
-Min Voltage OK             |       45        |
+dac_tx_minVoltageOK        |       45        |
 ===========================|=================|
-Min Voltage NOK            |       50        |
+dac_tx_minVoltageNOK       |       50        |
 ===========================|=================|
-Check max Voltage          |       55        |
+dac_tx_checkMaxVoltage     |       55        |
 ===========================|=================|
-Max Voltage OK             |       60        |
+dac_tx_maxVoltageOK        |       60        |
 ===========================|=================|
-Max Voltage NOK            |       65        |
+dac_tx_maxVoltageNOK       |       65        |
 ===========================|=================|
-Check Yellow LED           |       70        |
+dac_tx_checkYellowLED      |       70        |
 ===========================|=================|
-Yellow LED OK              |       75        |
+dac_tx_yellowLEDOK         |       75        |
 ===========================|=================|
-Yellow LED NOK             |       80        |
+dac_tx_yellowLEDNOK        |       80        |
 ===========================|=================|
-Check sincromotor          |       85        |
+dac_tx_checkSincromotor    |       85        |
 ===========================|=================|
-Sincromotor OK             |       90        |
+dac_tx_sincromotorOK       |       90        |
 ===========================|=================|
-Sincromotor NOK            |       95        |
+dac_tx_sincromotorNOK      |       95        |
 ==============================================

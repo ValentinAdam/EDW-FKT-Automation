@@ -116,7 +116,7 @@ state_search_zero:
         {
             //display pass, goto next
             returned = 0;
-            goto check_door_closed;
+            goto state_check_door_closed;
 
         }
         
@@ -131,7 +131,7 @@ state_search_zero:
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa confirmare initializare cu succes              -->     Verificare senzor usa inchisa                       (SENZOR USA)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    check_door_closed:
+    state_check_door_closed:
     {
         int door_closed_state = digitalRead(PIN_Door);
         Serial.println("Door state is: " + String(door_closed_state));
@@ -209,47 +209,16 @@ state_search_zero:
         }
         if(returned == 30)
         {
-            piston_controller.retractPiston1();
+            goto state_deactivate_piston1;
         } 
         else if(returned == 35)
         {
-            error_searching_led_RED = True;
+            error_searching_led_RED = true;
         }
-    //     while(true)
-    //     {
-    //         int red_value1 = colorDetector.detectRed();
-    //         int green_value1 = colorDetector.detectGreen();
-    //         int blue_value1 = colorDetector.detectBlue();
-    //         Serial.println("Red = " + String(red_value1) + "  Green = " + String(green_value1) + "  Blue = " + String(blue_value1));
-    //         displayLCD.printSecondRowNoClear("R=" + String(red_value1) + "G=" + String(green_value1) + "B=" + String(blue_value1));
-    //         if(red_value1 > green_value1 && red_value1 > blue_value1)   // TODO: Calibrate and change to 0-255
-    //         {
-    //             Serial.println("RED LED ON");
-    //             goto state_deactivate_piston1;
-    //         }
-    //         else if (red_value1 > blue_value1 && green_value1 > blue_value1)
-    //         {
-    //             Serial.println("YELLOW LED ON");
-    //         }
-    //         else
-    //         {
-    //             Serial.println("Unknown color");
-    //         }
-
-    //         if (millis() - time_of_checking_led_red >= stop_searching_led_red) 
-    //         {
-    //             Serial.println("Timeout: " + String(stop_searching_led_red/1000) + " seconds have elapsed since started checking if LED is RED");
-    //             error_searching_led_RED = true;
-    //             piston_controller.retractPiston1();
-    //             Serial.println("Piston 1 deactivated");            
-    //             break;
-    //         }
-    //     }
-
         while(error_searching_led_RED == true)
         {
             Serial.println("RED LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-            displayLCD.printBothRows("Confirm FAIL","RED LED NOT OK");
+            displayLCD.printBothRows("CONFIRMATI FAIL!","LED ROSU NOK");
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
@@ -259,17 +228,17 @@ state_search_zero:
                 goto state_boardpower_deactivate;
             }         
         }
-//     }
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa verificare LED rosu                            -->     Dezactivare piston "Pruftaste"                      (PISTON 1)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_deactivate_piston1:
-//     {
-//         piston_controller.retractPiston1();
-//         displayLCD.printFirstRow("Piston 1 OFF");
-//         Serial.println("Piston 1 deactivated");
-//         goto state_stepper_to_min;
-//     }     
+    state_deactivate_piston1:
+    {
+        piston_controller.retractPiston1();
+        displayLCD.printFirstRow("Piston 1 OFF");
+        Serial.println("Piston 1 deactivated");
+        goto state_voltage_check_min;
+    }     
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa dezactivare piston "Pruftaste"                 -->     Rotire stepper in pozitia MIN                       (STEPPER)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -286,39 +255,44 @@ state_search_zero:
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa rotire stepper la MIN                          -->     Verificare senzor tensiune MIN                      (ZMPT101B)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_voltage_check_MIN:
-//     {
-//         bool error_checking_voltage_MIN = false;
-//         float voltage_value_MIN = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
-//         Serial.println("Average of last voltage values: " + String(voltage_value_MIN));
-//         displayLCD.printFirstRow("MIN volt.: "+ String(voltage_value_MIN));
-//         // if(voltage_value_MIN > 94 && voltage_value_MIN < 108)
-//         if(voltage_value_MIN > 0 && voltage_value_MIN < 240)    // TODO:set minimum value
-//         {
-//             Serial.println("MIN voltage value OK");
-//             displayLCD.printSecondRowNoClear("MIN voltage OK");
-//             goto state_stepper_to_max;
-//         }
-//         else
-//         {
-//             Serial.println("MIN voltage value NOT OK");
-//             error_checking_voltage_MIN = true;
-//         }
-
-//         while(error_checking_voltage_MIN == true)
-//         {
-//             Serial.println("MIN voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             displayLCD.printBothRows("Confirm FAIL","MIN voltage NOK");
-//             analogWrite(PIN_Buzzer, 255);
-//             analogWrite(PIN_LED_Red, 255);
-//             analogWrite(PIN_Button_Fail_LED, 255);
-//             if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
-//             {
-//                 Serial.println("Fail confirmed");
-//                 goto state_boardpower_deactivate;
-//             }         
-//         }
-//     }
+    state_voltage_check_min:
+    {
+        bool error_checking_voltage_MIN = false;
+        //float voltage_value_MIN = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
+        Serial.println("Average of last voltage values: ");
+        displayLCD.printFirstRow("TESTARE VAL. MIN");
+        // if(voltage_value_MIN > 94 && voltage_value_MIN < 108)
+        communication.dac_tx_checkMinVoltage();
+        while(returned == 0)
+        {
+            returned = communication.adc_rx();
+            delay(5);
+        }
+        if (returned == 45)
+        {
+            returned = 0;
+            displayLCD.printSecondRowNoClear("VALOARE MIN OK");
+            goto state_voltage_check_MAX;
+        }
+        else if(returned == 50)
+        {
+            returned = 0;
+            error_checking_voltage_MIN == true;
+        }
+        while(error_checking_voltage_MIN == true)
+        {
+            Serial.println("MIN voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("CONFIRMATI FAIL","TENSIUNE MIN NOK");
+            analogWrite(PIN_Buzzer, 255);
+            analogWrite(PIN_LED_Red, 255);
+            analogWrite(PIN_Button_Fail_LED, 255);
+            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            {
+                Serial.println("Fail confirmed");
+                goto state_boardpower_deactivate;
+            }         
+        }
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa verificare valoare MIN                         -->     Rotire stepper in pozitia MAX                       (STEPPER)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -335,39 +309,43 @@ state_search_zero:
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa rotire stepper la MAX                          -->     Verificare senzor tensiune MAX                      (ZMPT101B)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_voltage_check_MAX:
-//     {
-//         bool error_checking_voltage_MAX = false;
-//         float voltage_value_MAX = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
-//         Serial.println("Average of last voltage values: " + String(voltage_value_MAX));
-//         displayLCD.printFirstRow("MAX volt.: "+ String(voltage_value_MAX));
-//         // if(voltage_value_MAX > 219 && voltage_value_MAX < 233)
-//         if(voltage_value_MAX > 0 && voltage_value_MAX < 240)    //TODO:set maximum value
-//         {
-//             displayLCD.printSecondRowNoClear("MAX voltage OK");
-//             Serial.println("MAX voltage value OK");
-//             goto state_stepper_to_center;
-//         }
-//         else
-//         {
-//             Serial.println("MAX voltage value NOT OK");
-//             error_checking_voltage_MAX = true;
-//         }
-
-//         while(error_checking_voltage_MAX == true)
-//         {
-//             displayLCD.printBothRows("Confirm FAIL","MAX voltage NOK");
-//             Serial.println("MAX voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             analogWrite(PIN_Buzzer, 255);
-//             analogWrite(PIN_LED_Red, 255);
-//             analogWrite(PIN_Button_Fail_LED, 255);
-//             if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
-//             {
-//                 Serial.println("Fail confirmed");
-//                 goto state_boardpower_deactivate;
-//             }         
-//         }
-//     }
+    state_voltage_check_MAX:
+    {
+        bool error_checking_voltage_MAX = false;
+        //float voltage_value_MAX = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
+        //Serial.println("Average of last voltage values: " + String(voltage_value_MAX));
+        displayLCD.printFirstRow("TESTARE VAL MAX");
+        communication.dac_tx_checkMaxVoltage();
+        while(returned == 0)
+        {
+            returned = communication.adc_rx();
+            delay(5);
+        }
+        if (returned == 60)
+        {
+            returned = 0;
+            displayLCD.printSecondRowNoClear("VALOARE MAX OK");
+            goto state_activate_piston2;
+        }
+        else if(returned == 65)
+        {
+            returned = 0;
+            error_checking_voltage_MAX == true;
+        }
+        while(error_checking_voltage_MAX == true)
+        {
+            displayLCD.printBothRows("CONFIRMATI FAIL","TENSIUNE MAX NOK");
+            Serial.println("MAX voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            analogWrite(PIN_Buzzer, 255);
+            analogWrite(PIN_LED_Red, 255);
+            analogWrite(PIN_Button_Fail_LED, 255);
+            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            {
+                Serial.println("Fail confirmed");
+                goto state_boardpower_deactivate;
+            }         
+        }
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa verificare valoare MAX                         -->     Centrare stepper                                    (STEPPER)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -384,167 +362,159 @@ state_search_zero:
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa centrare stepper                               -->     Activare piston "Abreinigung"                       (PISTON 2)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_activate_piston2:
-//     {
-//         piston_controller.extendPiston2();
-//         displayLCD.printFirstRow("Piston 2 ON");
-//         Serial.println("Piston 2 activated");
-//         goto state_check_LED_YELLOW; 
-//     } 
+    state_activate_piston2:
+    {
+        piston_controller.extendPiston2();
+        displayLCD.printFirstRow("Piston 2 ON");
+        Serial.println("Piston 2 activated");
+        displayLCD.printFirstRow("TESTARE LED GALB");
+        communication.dac_tx_checkYellowLED();
+        
+    } 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa activare piston "Abreinigung"                  -->     Verificare culoare galbena LED                      (SENZOR CULOARE)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_check_LED_YELLOW:
-//     {
-//         unsigned long time_of_checking_led_yellow = millis();
-//         const int stop_searching_led_yellow = 10000;  // 10 secunde
-//         bool error_searching_led_YELLOW = false;
-//         displayLCD.printFirstRow("Check YELLOW LED");
-//         while(true)
-//         {
-//             int red_value2 = colorDetector.detectRed();
-//             int green_value2 = colorDetector.detectGreen();
-//             int blue_value2 = colorDetector.detectBlue();
-//             Serial.println("Red = " + String(red_value2) + "  Green = " + String(green_value2) + "  Blue = " + String(blue_value2));
-//             displayLCD.printSecondRowNoClear("R=" + String(red_value2) + "G=" + String(green_value2) + "B=" + String(blue_value2));
-//             if(red_value2 > green_value2 && red_value2 > blue_value2)   // TODO: Calibrate and change to 0-255
-//             {
-//                 Serial.println("RED LED ON");
-//             }
-//             else if (red_value2 > blue_value2 && green_value2 > blue_value2)
-//             {
-//                 Serial.println("YELLOW LED ON");
-//                 goto state_deactivate_piston2;
-//             }
-//             else
-//             {
-//                 Serial.println("Unknown color");
-//             }
-
-//             if (millis() - time_of_checking_led_yellow >= stop_searching_led_yellow) 
-//             {
-//                 Serial.println("Timeout: " + String(stop_searching_led_yellow/1000) + " seconds have elapsed since started checking if LED is YELLOW");
-//                 error_searching_led_YELLOW = true;
-//                 piston_controller.retractPiston2();
-//                 displayLCD.printFirstRow("Piston 2 OFF");
-//                 Serial.println("Piston 2 deactivated");            
-//                 break;
-//             }
-//         }
-
-//         while(error_searching_led_YELLOW == true)
-//         {
-//             Serial.println("YELLOW LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             displayLCD.printBothRows("Confirm FAIL","YELLOW LED NOK");
-//             analogWrite(PIN_Buzzer, 255);
-//             analogWrite(PIN_LED_Red, 255);
-//             analogWrite(PIN_Button_Fail_LED, 255);
-//             if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
-//             {
-//                 Serial.println("Fail confirmed");
-//                 goto state_boardpower_deactivate;
-//             }         
-//         }
-//     }
+    state_check_LED_YELLOW:
+    {
+        unsigned long time_of_checking_led_yellow = millis();
+        //const int stop_searching_led_yellow = 10000;  // 10 secunde
+        bool error_searching_led_YELLOW = false;
+        displayLCD.printFirstRow("TESTARE LED GALB");
+        communication.dac_tx_checkYellowLED();
+        while(returned == 0)
+        {
+            returned = communication.adc_rx();
+            delay(5);
+        }
+        if (returned == 60)
+        {
+            returned = 0;
+            displayLCD.printSecondRowNoClear("VALOARE MAX OK");
+            goto state_deactivate_piston2;
+        }
+        else if(returned == 65)
+        {
+            returned = 0;
+            error_searching_led_YELLOW == true;
+        }
+        while(error_searching_led_YELLOW == true)
+        {
+            Serial.println("YELLOW LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","YELLOW LED NOK");
+            analogWrite(PIN_Buzzer, 255);
+            analogWrite(PIN_LED_Red, 255);
+            analogWrite(PIN_Button_Fail_LED, 255);
+            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            {
+                Serial.println("Fail confirmed");
+                goto state_boardpower_deactivate;
+            }
+        }
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa verificare culoare galbena LED                 -->     Dezactivare piston "Abreinigung"                    (PISTON 2)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_deactivate_piston2:
-//     {
-//         piston_controller.retractPiston2();
-//         displayLCD.printFirstRow("Piston 2 OFF");
-//         Serial.println("Piston 2 deactivated");
-//         goto state_check_synchronmotor; 
-//     }
+    state_deactivate_piston2:
+    {
+        piston_controller.retractPiston2();
+        displayLCD.printFirstRow("Piston 2 OFF");
+        Serial.println("Piston 2 deactivated");
+        goto state_check_synchronmotor; 
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa dezactivare piston "Abreinigung"               -->     Verificare rotire synchronmotor                      (SENZOR OPTIC)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_check_synchronmotor:
-//     {
-//         Serial.println("Beginning counting synchronmotor rotations");
-//         bool error_checking_optical_rotation = false;
-//         displayLCD.printBothRows("Checking", "synchronmotor");
-//         bool checking_optical_rotation = opticalCounter.countButtonPresses(Button_Count_Limit_Presses, Button_Count_Limit_Time);
-//         if (checking_optical_rotation == true) 
-//         {
-//             Serial.println("Synchronmotor successfully rotated!");
-//             goto state_activate_piston3;
-//         }
-//         else
-//         {
-//             Serial.println("Error. Time expired. Button not pressed successfully");
-//             error_checking_optical_rotation == true;
-//         }
-
-//         while(error_checking_optical_rotation == true)
-//         {
-//             Serial.println("Synchronmotor NOT rotating. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             displayLCD.printBothRows("Confirm FAIL","Synchronmotor");
-//             analogWrite(PIN_Buzzer, 255);
-//             analogWrite(PIN_LED_Red, 255);
-//             analogWrite(PIN_Button_Fail_LED, 255);
-//             if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
-//             {
-//                 Serial.println("Fail confirmed");
-//                 goto state_boardpower_deactivate;
-//             }         
-//         }
-//     }
+    state_check_synchronmotor:
+    {
+        Serial.println("Beginning counting synchronmotor rotations");
+        bool error_checking_optical_rotation = false;
+        displayLCD.printBothRows("Checking", "synchronmotor");
+        communication.dac_tx_checkSincromotor();
+        while(returned == 0)
+        {
+            returned = communication.adc_rx();
+            delay(5);
+        }
+        if (returned == 90)
+        {
+            returned = 0;
+            displayLCD.printSecondRowNoClear("VALOARE MAX OK");
+            goto state_deactivate_piston2;
+        }
+        else if(returned == 95)
+        {
+            returned = 0;
+            error_checking_optical_rotation == true;
+        }
+        while(error_checking_optical_rotation == true)
+        {
+            Serial.println("Synchronmotor NOT rotating. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
+            displayLCD.printBothRows("Confirm FAIL","Synchronmotor");
+            analogWrite(PIN_Buzzer, 255);
+            analogWrite(PIN_LED_Red, 255);
+            analogWrite(PIN_Button_Fail_LED, 255);
+            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            {
+                Serial.println("Fail confirmed");
+                goto state_boardpower_deactivate;
+            }         
+        }
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa verificare "Synchronmotor"                     -->     Activare piston stampila PASS                       (PISTON 3)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_activate_piston3:
-//     {
-//         piston_controller.extendPiston3();
-//         displayLCD.printPASS();
-//         Serial.println("Piston 3 activated");
-//         goto state_confirm_pass;
-//     }
+    state_activate_piston3:
+    {
+        piston_controller.extendPiston3();
+        displayLCD.printPASS();
+        Serial.println("Piston 3 activated");
+        goto state_confirm_pass;
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa activare stampila PASS                         -->     Aprindere LED verde                                 (LED VERDE)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_confirm_pass:
-//     {
-//         analogWrite(PIN_LED_Green, 255);
-//         Serial.println("UNIT PASS. Green LED ON");
-//         goto state_deactivate_piston3;
-//     }
+    state_confirm_pass:
+    {
+        analogWrite(PIN_LED_Green, 255);
+        Serial.println("UNIT PASS. Green LED ON");
+        goto state_deactivate_piston3;
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa aprindere LED verde                            -->     Dezactivare piston stampila PASS                    (PISTON 3)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_deactivate_piston3:
-//     {
-//         piston_controller.retractPiston3();
-//         Serial.println("Piston 3 deactivated");
-//         goto state_boardpower_deactivate;
-//     }
+    state_deactivate_piston3:
+    {
+        piston_controller.retractPiston3();
+        Serial.println("Piston 3 deactivated");
+        goto state_boardpower_deactivate;
+    }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Dupa dezactivare piston stampila validare           -->     Comutare releu "Boardpower" in OFF                  (PISTON 3)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//     state_boardpower_deactivate:
-//     {
-//         analogWrite(PIN_Buzzer, 0);
-//         analogWrite(PIN_LED_Red, 0);
-//         analogWrite(PIN_Button_Fail_LED, 0);
-//         analogWrite(PIN_Relay, LOW);
-//         Serial.println("Boardpower deactivated");
-//         // goto state_check_door_closed;
+    state_boardpower_deactivate:
+    {
+        analogWrite(PIN_Buzzer, 0);
+        analogWrite(PIN_LED_Red, 0);
+        analogWrite(PIN_Button_Fail_LED, 0);
+        analogWrite(PIN_Relay, LOW);
+        Serial.println("Boardpower deactivated");
+        // goto state_check_door_closed;
 
-//         int door_final_state = digitalRead(PIN_Door);
-//         Serial.println("Final door state is: "+ String(door_final_state));
-//         Serial.println("Checking if door is closed");
-//         while(door_final_state == HIGH)
-//         {
-//             Serial.println("Door is closed. OPEN THE DOOR");
-//             int door_final_state_check = digitalRead(PIN_Door);
-//             if(door_final_state_check == LOW)
-//             {
-//                 Serial.println("Door is open. PROCCESS COMPLETE");
-//                 goto state_check_door_closed;
-//             }
-//         }
-//     }
-// }
+        int door_final_state = digitalRead(PIN_Door);
+        Serial.println("Final door state is: "+ String(door_final_state));
+        Serial.println("Checking if door is closed");
+        while(door_final_state == HIGH)
+        {
+            Serial.println("Door is closed. OPEN THE DOOR");
+            int door_final_state_check = digitalRead(PIN_Door);
+            if(door_final_state_check == LOW)
+            {
+                Serial.println("Door is open. PROCCESS COMPLETE");
+                goto state_check_door_closed;
+            }
+        }
+    }
+
 
 
 
