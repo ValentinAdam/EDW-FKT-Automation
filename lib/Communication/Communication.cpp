@@ -3,7 +3,7 @@
 #include <driver/adc.h>
 #include <Arduino.h>
 
-Communication::Communication()
+void Communication::start()
 {
     dac_output_enable(DAC_CHANNEL_1);
     adc1_config_width(ADC_WIDTH_BIT_12);

@@ -5,7 +5,7 @@
 class Communication
 {
     public:
-        Communication();
+        void start();
         void dac_tx_sync();
         void dac_tx_potCalib();
         void dac_tx_potCentered();
@@ -29,4 +29,4 @@ class Communication
     private:
         
 };
-#endif;
+#endif

@@ -11,7 +11,7 @@
 #define ADC_PIN                 34
 #define PIN_Stepper1            32
 #define PIN_Stepper2            33
-#define PIN_Stepper3            25
+#define PIN_Stepper3            27
 #define PIN_Stepper4            26
 #define PIN_Color_S0            21
 #define PIN_Color_S1            22
@@ -21,6 +21,7 @@
 #define PIN_Voltmeter           36
 #define PIN_Optical_Count       19
 #define PIN_Microswitch         18
+
 #define Volt_Min_UE_ll          95
 #define Volt_Min_UE_lh          107
 #define Volt_Min_US_ll          49
@@ -43,12 +44,6 @@ int min_lh = 0;
 int max_ll = 0;
 int max_lh = 0; 
 
-// const double stepsPerRevolution = 2037.8864;                //    number of steps per revolution = 2037.8864    //  2048
-// const double degreePerStep      = stepsPerRevolution/360;   //    celsius degree per step
-// const double stepsLeftToRight   = 240*degreePerStep;        //    steps for 240 celsius degree
-// const double stepsCenterToLeft  = -120*degreePerStep;       //    steps for 120 celsius degree
-// const double stepsRightToCenter = -120*degreePerStep;       //    negative steps for 120 celsius degree
-
 const double stepsPerRevolution = 200;                //    number of steps per revolution = 2037.8864    //  2048
 const double degreePerStep      = stepsPerRevolution/360;   //    celsius degree per step
 const double stepsLeftToRight   = -240*degreePerStep;        //    steps for 240 celsius degree
@@ -63,6 +58,7 @@ Communication communication;
 
 void setup()
 {
+    communication.start();
     Serial.begin(115200);
     myStepper.setSpeed(60);   //  stepper speed in rpm
     colorDetector.initialize();
@@ -90,11 +86,12 @@ void setup()
     }
     communication.dac_tx_sync();
 }
-
-
-
 void loop()
 {
+    goto command_input;
+
+    command_input:
+    {
     command = 0;
     while(command == 0)
     {
@@ -103,34 +100,33 @@ void loop()
     switch (command)
     {
         case 10:
-            pot_calib();
+            goto pot_calib;
             break;
         case 25:
-            check_red_led();
+            goto check_red_led;
             break;
         case 40:
-            check_min_volt();
+            goto check_min_volt;
             break;
         case 55:
-            check_max_volt();
+            goto check_max_volt;
             break;
         case 70:
-            check_yellow_led();
+            goto check_yellow_led;
             break;
         case 85:
-            check_syncromotor();
+            goto check_syncromotor;
             break;
-
     }
-    
-}
+    }
+//}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////    Dupa verificare senzor usa deschisa                 -->     Rotire potentiometru spre "0"                       (STEPPER MOTOR)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////    In timpul rotirii potentiometrului                  -->     Verificare pozitie de "0"                           (MICROSWITCH)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void pot_calib()
+ pot_calib:
     {
         Serial.println("Beginning searching the zero point");
         int microswitch_state = digitalRead(PIN_Microswitch);
@@ -141,10 +137,8 @@ void pot_calib()
         while(microswitch_state == HIGH)
         {
             Serial.println("Microswitch not pressed");
-            // myStepper.step(25);
             myStepper.step(-10);
             Serial.println("Stepper motor moved 1 step to the right");
-            //displayLCD.printBothRows("CALIBRATING", "---------->");
             int microswitch_state_check = digitalRead(PIN_Microswitch);
             if(microswitch_state_check == LOW)
             {
@@ -152,6 +146,7 @@ void pot_calib()
                 delay(150);
                 myStepper.step(stepsRightToCenter);
                 communication.dac_tx_potCentered();
+                 goto command_input;
             }
             if (millis() - time_of_searching_zero >= stop_searching_zero)
             {
@@ -164,43 +159,43 @@ void pot_calib()
         {
             Serial.println("Microswitch not pressed. TURN MAIN POWER OFF !!!");
             communication.dac_tx_potCalibNOK();
+            goto command_input;
         }
     }
-void check_red_led()
+ check_red_led:
 {
     unsigned long time_of_checking_led_red = millis();
     const int stop_searching_led_red = 10000;  // 10 secunde
     bool error_searching_led_RED = false;
-    //displayLCD.printFirstRow("Checking RED LED");
     while(true)
     {
         int red_value1 = colorDetector.detectRed();
         int green_value1 = colorDetector.detectGreen();
         int blue_value1 = colorDetector.detectBlue();
         Serial.println("Red = " + String(red_value1) + "  Green = " + String(green_value1) + "  Blue = " + String(blue_value1));
-        //displayLCD.printSecondRowNoClear("R=" + String(red_value1) + "G=" + String(green_value1) + "B=" + String(blue_value1));
         if(red_value1 > green_value1 && red_value1 > blue_value1)   // TODO: Calibrate and change to 0-255
         {
             Serial.println("RED LED ON");
             communication.dac_tx_redLEDOK();
+             goto command_input;
         }
         else if (red_value1 > blue_value1 && green_value1 > blue_value1)
         {
             Serial.println("YELLOW LED ON");
             communication.dac_tx_redLEDNOK();
+             goto command_input;
         }
         if (millis() - time_of_checking_led_red >= stop_searching_led_red) 
         {
             Serial.println("Timeout: " + String(stop_searching_led_red/1000) + " seconds have elapsed since started checking if LED is RED");
             error_searching_led_RED = true;
             communication.dac_tx_redLEDNOK();
-            Serial.println("Piston 1 deactivated");
             break;
         }
     }
+    goto command_input;
 }
-
-    void check_min_volt()
+check_min_volt:
     {
         myStepper.step(stepsCenterToLeft);
         delay(150);
@@ -208,27 +203,34 @@ void check_red_led()
         if(voltage_value_MIN > min_ll && voltage_value_MIN < min_lh)
         {
             communication.dac_tx_minVoltageOK();
+             goto command_input;
         }
         else
         {
             communication.dac_tx_minVoltageNOK();
+            myStepper.step(stepsRightToCenter);
+            goto command_input;
         }
     }
-    void check_max_volt()
+check_max_volt:
     {
         myStepper.step(stepsLeftToRight);
         delay(150);
         float voltage_value_MAX = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
-        if(voltage_value_MAX > max_ll && voltage_value_MAX < max_lh)
+        if(voltage_value_MAX >= max_ll && voltage_value_MAX <= max_lh)
         {
             communication.dac_tx_maxVoltageOK();
+            myStepper.step(stepsRightToCenter);
+            goto command_input;
         }
         else
         {
             communication.dac_tx_maxVoltageNOK();
+            myStepper.step(stepsRightToCenter);
+            goto command_input;
         }
     }
-void check_yellow_led()
+check_yellow_led:
 {
     myStepper.step(stepsRightToCenter);
     unsigned long time_of_checking_led_yellow = millis();
@@ -244,33 +246,37 @@ void check_yellow_led()
         {
             Serial.println("RED LED ON");
             communication.dac_tx_yellowLEDNOK();
+            goto command_input;
         }
         else if (red_value2 > blue_value2 && green_value2 > blue_value2)
         {
             Serial.println("YELLOW LED ON");
             communication.dac_tx_yellowLEDOK();
+            goto command_input;
         }
         if (millis() - time_of_checking_led_yellow >= stop_searching_led_yellow) 
         {
             Serial.println("Timeout: " + String(stop_searching_led_yellow/1000) + " seconds have elapsed since started checking if LED is RED");
             error_searching_led_YELLOW = true;
             communication.dac_tx_redLEDNOK();
-            Serial.println("Piston 1 deactivated");
-            break;
+            goto command_input;
         }
     }
 }
-void check_syncromotor()
+check_syncromotor:
 {
     bool checking_optical_rotation = opticalCounter.countButtonPresses(Button_Count_Limit_Presses, Button_Count_Limit_Time);
         if (checking_optical_rotation == true) 
         {
             Serial.println("Synchronmotor successfully rotated!");
-            goto state_activate_piston3;
+            communication.dac_tx_sincromotorOK();
+            goto command_input;
         }
         else
         {
             Serial.println("Error. Time expired. Button not pressed successfully");
-            error_checking_optical_rotation == true;
+            communication.dac_tx_sincromotorNOK();
+            goto command_input;
         }
+}
 }
