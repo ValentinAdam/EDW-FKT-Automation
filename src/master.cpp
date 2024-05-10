@@ -2,33 +2,43 @@
 // #include "DisplayController.h"
 // #include "ButtonCounter.h"
 // #include "PistonController.h"
-// #include "Communication.h"
-// #include <driver/dac.h>
-// #include <driver/adc.h>
+// #include <WiFi.h>
+// #include <HTTPClient.h>
 
-// #define ADC_PIN                 34
-// #define PIN_DAC                 25
 // #define PIN_Piston1             17      // Brown
 // #define PIN_Piston2             16      // Red
-// #define PIN_Piston3             4       // Orange
-// #define PIN_Relay               27
-// #define PIN_Door                14
+// #define PIN_Piston3             18       // Orange               CHANGE BECAUSE WiFi Connection
+// #define PIN_Relay               19//                            CHANGE WiFi
+// #define PIN_Door                36//                            CHANGE WiFi
 // #define PIN_Button_Fail_LED     33      // Same
-// #define PIN_Button_Fail_Switch  13
+// #define PIN_Button_Fail_Switch  35       //                     CHANGE WiFI
 // #define PIN_Buzzer              23      // Modify if annoying
-// #define PIN_LED_Red             12      // Same
+// #define PIN_LED_Red             32      //                      CHANGE WiFi
 // #define PIN_LED_Green           5
-
 
 // #define Display_Columns                 16
 // #define Display_Rows                    2
 // #define Display_Address                 0x27
 // #define Button_Count_Limit_Presses      10
 
-// volatile int returned = 0;
+// const char* ssid = "EDW_CX_AP";
+// const char* password = "89089455";
+// const char* calibrate =         "http://192.168.4.1/calibrate";
+// const char* checkRedLed =       "http://192.168.4.1/redled";
+// const char* minimumVoltage =    "http://192.168.4.1/minimumvoltage";
+// const char* maximumVoltage =    "http://192.168.4.1/maximumvoltage";
+// const char* chkYellowLED =      "http://192.168.4.1/yellowled";
+// const char* checkSynchromotor = "http://192.168.4.1/synchromotor";
+
+// String calibresult;
+// String redLEDresult;
+// String minVoltresult;
+// String maxVoltresult;
+// String yellowLEDresult;
+// String syncroResult;
+
 // PistonController piston_controller(PIN_Piston1, PIN_Piston2, PIN_Piston3);
 // DisplayController displayLCD(Display_Columns, Display_Rows, Display_Address);
-// Communication communication;
 
 // void setup()
 // {
@@ -51,22 +61,49 @@
 //     piston_controller.retractPiston1();
 //     piston_controller.retractPiston2();
 //     piston_controller.retractPiston3();
+//     WiFi.begin(ssid, password);
 
-//     delay(1500);//asteptam SLAVE-ul sa interogheze adc-ul
-//     communication.dac_tx_sync();
-//     while(returned != 50)//asteptam raspunsul de la SLAVE
-//     {   
-//         returned = communication.adc_rx();
-//         delay(50);
-//         displayLCD.printFirstRow("CONECTARE SLAVE");
-//     }
-//     displayLCD.printFirstRow("SLAVE CONECTAT");
-//     delay(800);
-//     returned = 0;
 // }
+// String httpExecute(const char* function) 
+// {
+//   HTTPClient http;
+//   http.begin(function);
+//   int httpReturn = http.GET();
+  
+//   String payload = "--"; 
+  
+//   while (httpReturn == 0) 
+//   {
+//     Serial.print("HTTP Response code: ");
+//     Serial.println(httpReturn);
+//     payload = http.getString();
+//   }
+// //   else 
+// //   {
+// //     Serial.print("Error code: ");
+// //     Serial.println(httpReturn);
+// //   }
 
+//   http.end();
+//   return payload;
+// }
 // void loop()
 // {
+//     if(WiFi.status() != WL_CONNECTED)
+//     {
+//         Serial.print("Se conecteaza...");
+//         WiFi.begin(ssid, password);
+//         while(WiFi.status() !=WL_CONNECTED);
+//         {
+//             Serial.print(".");
+//             delay(100);
+//         }
+//     }
+//     else
+//     {
+//         goto state_check_door_open;
+//     }
+
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Pornire aparat (Se comuta buton "Main Power")       -->     Verificare senzor usa deschisa                      (BUTON USA)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,26 +137,19 @@
 
 // state_search_zero:
 //     {
-//         communication.dac_tx_potCalib();
-//         delay(300);
-//         while(returned == 0)
+//         displayLCD.printFirstRow("CENTRARE AX POT");
+//         calibresult = httpExecute(calibrate);
+
+//         if(calibresult == "PASS")
 //         {
-//             returned = communication.adc_rx();
-//             delay(5);
+//             displayLCD.printSecondRowNoClear("AX CENTRAT");
+//             goto state_check_door_closed;
 //         }
-//         if(returned == 20)
+//         else if(calibresult == "FAIL")
 //         {
-//             returned = 0;
+//             displayLCD.printSecondRowNoClear("EROARE!");
 //             goto state_check_door_open;
 //         }
-//         else if(returned == 15)
-//         {
-//             //display pass, goto next
-//             returned = 0;
-//             goto state_check_door_closed;
-
-//         }
-        
 //     }
 // // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // // ////    Dupa atingere pozitie de "0"                        -->     Centrare potentiometru                              (STEPPER MOTOR)
@@ -137,12 +167,12 @@
 //         Serial.println("Door state is: " + String(door_closed_state));
 //         Serial.println("Checking if door is closed");
 //         unsigned long time_of_checking_door_closed = millis();
-//         const int stop_searching_door_closed = 50000;  // 10 secunde
+//         const int stop_searching_door_closed = 990000;  // 10 secunde
 //         bool error_searching_door_closed = false;
 //         while(door_closed_state == HIGH) 
 //         {
 //             Serial.println("Door is open");
-//             displayLCD.printSecondRowNoClear("INCHIDETI CLAPA");
+//             displayLCD.printBothRows("INCHIDETI CLAPA!", "INCEPE TESTAREA");
 //             int door_closed_state_check = digitalRead(PIN_Door);
 //             if(door_closed_state_check == LOW)     
 //             {
@@ -161,7 +191,7 @@
 //         while(error_searching_door_closed == true)
 //         {
 //             Serial.println("Door not closed. PRESS CONFIRM FAIL & CLOSE THE DOOR !!!");
-//             displayLCD.printBothRows("Confirm FAIL","Door not closed");
+//             displayLCD.printBothRows("CONFIRMATI FAIL","TIMPUL A EXPIRAT");
 //             analogWrite(PIN_Buzzer, 255);
 //             analogWrite(PIN_LED_Red, 255);
 //             analogWrite(PIN_Button_Fail_LED, 255);
@@ -179,7 +209,7 @@
 //     {
 //         piston_controller.extendPiston1();
 //         delay(500);
-//         displayLCD.printFirstRow("Pruftaste active");
+//         displayLCD.printFirstRow("TESTARE...");
 //         Serial.println("Piston 1 activated");
 //         goto state_boardpower_activate;
 //     }    
@@ -189,8 +219,8 @@
 //     state_boardpower_activate:
 //     {
 //         analogWrite(PIN_Relay, 255);
+//         displayLCD.printSecondRowNoClear("ALIMENTARE UNITATE!");
 //         delay(2000);
-//         displayLCD.printSecondRowNoClear("Boardpower ON");
 //         Serial.println("Boardpower activated");
 //         goto state_check_LED_RED;
 //     }
@@ -200,21 +230,15 @@
 //     state_check_LED_RED:
 //     {
 //         bool error_searching_led_RED = false;
-//         displayLCD.printFirstRow("Checking RED LED");
-//         communication.dac_tx_checkRedLED();
-//         while(returned == 0)
+//         displayLCD.printSecondRowNoClear("TESTARE LED ROSU");
+//         redLEDresult = httpExecute(checkRedLed);
+//         if(redLEDresult == "PASS")
 //         {
-//             returned = communication.adc_rx();
-//             delay(5);
-//         }
-//         if(returned == 30)
-//         {
-//             returned = 0;
+//             displayLCD.printSecondRowNoClear("LED ROSU OK");
 //             goto state_deactivate_piston1;
 //         } 
-//         else if(returned == 35)
+//         else if(redLEDresult == "FAIL")
 //         {
-//             returned = 0;
 //             error_searching_led_RED = true;
 //         }
 //         while(error_searching_led_RED == true)
@@ -237,7 +261,6 @@
 //     state_deactivate_piston1:
 //     {
 //         piston_controller.retractPiston1();
-//         displayLCD.printFirstRow("Piston 1 OFF");
 //         Serial.println("Piston 1 deactivated");
 //         goto state_voltage_check_min;
 //     }     
@@ -251,28 +274,21 @@
 //     {
 //         bool error_checking_voltage_MIN = false;
 //         Serial.println("Average of last voltage values: ");
-//         displayLCD.printFirstRow("TESTARE VAL. MIN");
-//         communication.dac_tx_checkMinVoltage();
-//         while(returned == 0)
+//         displayLCD.printSecondRowNoClear("TESTARE VAL. MIN");
+//         minVoltresult = httpExecute(minimumVoltage);
+//         if (minVoltresult == "PASS")
 //         {
-//             returned = communication.adc_rx();
-//             delay(5);
-//         }
-//         if (returned == 45)
-//         {
-//             returned = 0;
 //             displayLCD.printSecondRowNoClear("VALOARE MIN OK");
 //             goto state_voltage_check_MAX;
 //         }
-//         else if(returned == 50)
+//         else if(minVoltresult == "FAIL")
 //         {
-//             returned = 0;
 //             error_checking_voltage_MIN == true;
 //         }
 //         while(error_checking_voltage_MIN == true)
 //         {
 //             Serial.println("MIN voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             displayLCD.printBothRows("CONFIRMATI FAIL","TENSIUNE MIN NOK");
+//             displayLCD.printBothRows("CONFIRMATI FAIL","VALOARE MIN NOK");
 //             analogWrite(PIN_Buzzer, 255);
 //             analogWrite(PIN_LED_Red, 255);
 //             analogWrite(PIN_Button_Fail_LED, 255);
@@ -292,27 +308,20 @@
 //     state_voltage_check_MAX:
 //     {
 //         bool error_checking_voltage_MAX = false;
-//         displayLCD.printFirstRow("TESTARE VAL MAX");
-//         communication.dac_tx_checkMaxVoltage();
-//         while(returned == 0)
+//         displayLCD.printSecondRowNoClear("TESTARE VAL MAX");
+//         maxVoltresult = httpExecute(maximumVoltage);
+//         if (maxVoltresult == "PASS")
 //         {
-//             returned = communication.adc_rx();
-//             delay(5);
-//         }
-//         if (returned == 60)
-//         {
-//             returned = 0;
 //             displayLCD.printSecondRowNoClear("VALOARE MAX OK");
 //             goto state_activate_piston2;
 //         }
-//         else if(returned == 65)
+//         else if(maxVoltresult == "FAIL")
 //         {
-//             returned = 0;
 //             error_checking_voltage_MAX == true;
 //         }
 //         while(error_checking_voltage_MAX == true)
 //         {
-//             displayLCD.printBothRows("CONFIRMATI FAIL","TENSIUNE MAX NOK");
+//             displayLCD.printBothRows("CONFIRMATI FAIL","VALOARE MAX NOK");
 //             Serial.println("MAX voltage value NOT OK. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
 //             analogWrite(PIN_Buzzer, 255);
 //             analogWrite(PIN_LED_Red, 255);
@@ -336,7 +345,6 @@
 //         delay(500);
 //         displayLCD.printFirstRow("Piston 2 ON");
 //         Serial.println("Piston 2 activated");
-//         displayLCD.printFirstRow("TESTARE LED GALB");
 //         goto state_check_LED_YELLOW;
         
 //     } 
@@ -347,28 +355,21 @@
 //     {
 //         unsigned long time_of_checking_led_yellow = millis();
 //         bool error_searching_led_YELLOW = false;
-//         displayLCD.printFirstRow("TESTARE LED GALB");
-//         communication.dac_tx_checkYellowLED();
-//         while(returned == 0)
+//         displayLCD.printSecondRowNoClear("TESTARE LED GALB");
+//         yellowLEDresult = httpExecute(chkYellowLED);
+//         if (yellowLEDresult == "PASS")
 //         {
-//             returned = communication.adc_rx();
-//             delay(5);
-//         }
-//         if (returned == 60)
-//         {
-//             returned = 0;
-//             displayLCD.printSecondRowNoClear("VALOARE MAX OK");
+//             displayLCD.printSecondRowNoClear("LED GALBEN OK");
 //             goto state_deactivate_piston2;
 //         }
-//         else if(returned == 65)
+//         else if(yellowLEDresult == "FAIL")
 //         {
-//             returned = 0;
 //             error_searching_led_YELLOW == true;
 //         }
 //         while(error_searching_led_YELLOW == true)
 //         {
 //             Serial.println("YELLOW LED not detected. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             displayLCD.printBothRows("Confirm FAIL","YELLOW LED NOK");
+//             displayLCD.printBothRows("CONFIRMATI FAIL","LED GALBEN NOK");
 //             analogWrite(PIN_Buzzer, 255);
 //             analogWrite(PIN_LED_Red, 255);
 //             analogWrite(PIN_Button_Fail_LED, 255);
@@ -397,29 +398,21 @@
 //     {
 //         Serial.println("Beginning counting synchronmotor rotations");
 //         bool error_checking_optical_rotation = false;
-//         displayLCD.printBothRows("Checking", "synchronmotor");
-//         communication.dac_tx_checkSincromotor();
-//         while(returned == 0)
+//         displayLCD.printSecondRowNoClear("TESTARE S-MOTOR");
+//         syncroResult = httpExecute(checkSynchromotor);
+//         if (syncroResult == "PASS")
 //         {
-//             returned = communication.adc_rx();
-//             delay(5);
-//         }
-//         if (returned == 90)
-//         {
-//             returned = 0;
 //             displayLCD.printSecondRowNoClear("SYNCHROMOTOR OK!");
 //             goto state_activate_piston3;
 //         }
-//         else if(returned == 95)
+//         else if(syncroResult == "FAIL")
 //         {
-//             returned = 0;
 //             error_checking_optical_rotation == true;
-//              displayLCD.printSecondRowNoClear("SYNCHROMOTOR NOK");
 //         }
 //         while(error_checking_optical_rotation == true)
 //         {
 //             Serial.println("Synchronmotor NOT rotating. PRESS CONFIRM FAIL & OPEN THE DOOR !!!");
-//             displayLCD.printBothRows("Confirm FAIL","Synchronmotor");
+//             displayLCD.printBothRows("CONFIRMATI FAIL","SYNCHROMOTOR NOK");
 //             analogWrite(PIN_Buzzer, 255);
 //             analogWrite(PIN_LED_Red, 255);
 //             analogWrite(PIN_Button_Fail_LED, 255);
@@ -484,3 +477,5 @@
 //         }
 //     }
 // }
+
+
