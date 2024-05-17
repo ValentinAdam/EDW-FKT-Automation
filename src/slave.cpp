@@ -10,14 +10,15 @@
 #define PIN_Stepper2            33
 #define PIN_Stepper3            17
 #define PIN_Stepper4            16
-#define PIN_Color_S0            1
-#define PIN_Color_S1            3
-#define PIN_Color_S2            2
-#define PIN_Color_S3            5
+#define PIN_Color_S0            18
+#define PIN_Color_S1            19
+#define PIN_Color_S2            5
+#define PIN_Color_S3            23
 #define PIN_Color_Out           39
 #define PIN_Voltmeter           36
-#define PIN_Optical_Count       19
-#define PIN_Microswitch         18
+#define PIN_Optical_Count       34
+#define PIN_Microswitch         35
+#define PIN_RegionSel           4
 
 #define Volt_Min_UE_ll          95
 #define Volt_Min_UE_lh          107
@@ -27,7 +28,6 @@
 #define Volt_Max_UE_lh          232
 #define Volt_Max_US_ll          112
 #define Volt_Max_US_lh          122
-#define PIN_RegionSel           13
 
 #define Button_Count_Limit_Presses      10
 #define Button_Count_Limit_Time         30000
@@ -84,7 +84,7 @@ String potCalib()
                 break;
             }
         }
-        while(error_searching_zero == true)
+        if(error_searching_zero == true)
         {
             Serial.println("Microswitch not pressed. TURN MAIN POWER OFF !!!");
             return fail;
@@ -127,20 +127,18 @@ String checkMinVolt()
         float voltage_value_MIN = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
         if(voltage_value_MIN > min_ll && voltage_value_MIN < min_lh)
         {
-            myStepper.step(stepsRightToCenter);
+            myStepper.step(stepsLeftToRight);
             return pass;
         }
         else
         {
-            myStepper.step(stepsRightToCenter);
+            myStepper.step(stepsLeftToRight);
             return fail;
         }
     }
 
 String checkMaxVolt()
     {
-        myStepper.step(stepsLeftToRight);
-        delay(250);
         float voltage_value_MAX = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
         if(voltage_value_MAX >= max_ll && voltage_value_MAX <= max_lh)
         {
@@ -156,7 +154,6 @@ String checkMaxVolt()
 
 String checkYellowLed()
 {
-    myStepper.step(stepsRightToCenter);
     unsigned long time_of_checking_led_yellow = millis();
     const int stop_searching_led_yellow = 10000;  // 10 secunde
     bool error_searching_led_YELLOW = false;
@@ -226,7 +223,6 @@ void setup()
     Serial.println(max_ll);
     WiFi.softAP(ssid, password);
     IPAddress IP = WiFi.softAPIP();
-    Serial.print(IP);
     
     server.on("/calibrate", HTTP_GET, [](AsyncWebServerRequest *request)
     {

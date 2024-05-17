@@ -10,11 +10,12 @@
 // #define PIN_Piston3             18       // Orange               CHANGE BECAUSE WiFi Connection
 // #define PIN_Relay               19//                            CHANGE WiFi
 // #define PIN_Door                36//                            CHANGE WiFi
-// #define PIN_Button_Fail_LED     33      // Same
+// #define PIN_Button_Fail_LED     32      // Same
 // #define PIN_Button_Fail_Switch  35       //                     CHANGE WiFI
 // #define PIN_Buzzer              23      // Modify if annoying
 // #define PIN_LED_Red             32      //                      CHANGE WiFi
 // #define PIN_LED_Green           5
+// #define intled                  2
 
 // #define Display_Columns                 16
 // #define Display_Rows                    2
@@ -52,6 +53,7 @@
 //     pinMode(PIN_Buzzer, OUTPUT);
 //     pinMode(PIN_LED_Red, OUTPUT);
 //     pinMode(PIN_LED_Green, OUTPUT);
+//     pinMode(intled, OUTPUT);
 
 //     analogWrite(PIN_Relay, 0);
 //     analogWrite(PIN_Button_Fail_LED, 0);
@@ -61,7 +63,7 @@
 //     piston_controller.retractPiston1();
 //     piston_controller.retractPiston2();
 //     piston_controller.retractPiston3();
-//     WiFi.begin(ssid, password);
+    
 
 // }
 // String httpExecute(const char* function) 
@@ -89,20 +91,23 @@
 // }
 // void loop()
 // {
-//     if(WiFi.status() != WL_CONNECTED)
-//     {
+//     volatile int il = 1;
+//     WiFi.begin(ssid, password);
 //         Serial.print("Se conecteaza...");
-//         WiFi.begin(ssid, password);
+//         displayLCD.printSecondRow("Se conecteaza.");
 //         while(WiFi.status() !=WL_CONNECTED);
 //         {
+//             il++;
 //             Serial.print(".");
-//             delay(100);
+//             displayLCD.printFirstRow("Astept...");
+//             analogWrite(intled, il);
+//             delay(500);
+//             if(il == 255){il=1;}
 //         }
-//     }
-//     else
-//     {
-//         goto state_check_door_open;
-//     }
+//     il = 0;
+//     analogWrite(intled, il);
+//     goto state_check_door_open;
+
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////    Pornire aparat (Se comuta buton "Main Power")       -->     Verificare senzor usa deschisa                      (BUTON USA)
@@ -139,7 +144,7 @@
 //     {
 //         displayLCD.printFirstRow("CENTRARE AX POT");
 //         calibresult = httpExecute(calibrate);
-
+//         Serial.print(calibresult);
 //         if(calibresult == "PASS")
 //         {
 //             displayLCD.printSecondRowNoClear("AX CENTRAT");
