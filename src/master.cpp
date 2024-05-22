@@ -11,32 +11,35 @@
 #define PIN_Relay               19//                            CHANGE WiFi
 #define PIN_Door                33//                            CHANGE WiFi
 #define PIN_Button_Fail_LED     32      // Same
-#define PIN_Button_Fail_Switch  35       //                     CHANGE WiFI
+#define PIN_Button_Fail_Switch  2        //                     CHANGE WiFI
 #define PIN_Buzzer              23      // Modify if annoying
 #define PIN_LED_Red             32      //                      CHANGE WiFi
 #define PIN_LED_Green           5
-#define intled                  2
+//#define intled                  4
 
 #define Display_Columns                 16
 #define Display_Rows                    2
 #define Display_Address                 0x27
 #define Button_Count_Limit_Presses      10
 
-const char* ssid = "EDW_CX_AP";
-const char* password = "89089455";
-const char* calibrate =         "http://192.168.4.1/calibrate";
-const char* checkRedLed =       "http://192.168.4.1/redled";
-const char* minimumVoltage =    "http://192.168.4.1/minimumvoltage";
-const char* maximumVoltage =    "http://192.168.4.1/maximumvoltage";
-const char* chkYellowLED =      "http://192.168.4.1/yellowled";
-const char* checkSynchromotor = "http://192.168.4.1/synchromotor";
+//const char* ssid = "EDW_CX_AP";
+//const char* password = "89089455";
+// const char* calibrate =         "http://192.168.4.1/calibrate";
+// const char* checkRedLed =       "http://192.168.4.1/redled";
+// const char* minimumVoltage =    "http://192.168.4.1/minimumvoltage";
+// const char* maximumVoltage =    "http://192.168.4.1/maximumvoltage";
+// const char* chkYellowLED =      "http://192.168.4.1/yellowled";
+// const char* checkSynchromotor = "http://192.168.4.1/synchromotor";
+volatile int initialized = 0;
+const char* fail = "FAIL";
+const char* pass = "PASS";
 
-String calibresult = "";
-String redLEDresult = "";
-String minVoltresult = "";
-String maxVoltresult = "";
-String yellowLEDresult = "";
-String syncroResult = "";
+// String calibresult = "";
+// String redLEDresult = "";
+// String minVoltresult = "";
+// String maxVoltresult = "";
+// String yellowLEDresult = "";
+// String syncroResult = "";
 
 PistonController piston_controller(PIN_Piston1, PIN_Piston2, PIN_Piston3);
 DisplayController displayLCD(Display_Columns, Display_Rows, Display_Address);
@@ -53,7 +56,7 @@ void setup()
     pinMode(PIN_Buzzer, OUTPUT);
     pinMode(PIN_LED_Red, OUTPUT);
     pinMode(PIN_LED_Green, OUTPUT);
-    pinMode(intled, OUTPUT);
+    //pinMode(intled, OUTPUT);
 
     analogWrite(PIN_Relay, 0);
     analogWrite(PIN_Button_Fail_LED, 0);
@@ -91,22 +94,26 @@ String httpExecute(const char* function)
 }
 void loop()
 {
-    volatile int il = 1;
-    WiFi.begin(ssid, password);
+    if (initialized == 0){
+    //volatile int il = 1;
+    WiFi.begin("EDW_CX_AP", "89089455");
         Serial.print("Se conecteaza...");
         displayLCD.printSecondRow("Se conecteaza.");
         while(WiFi.status() !=WL_CONNECTED);
         {
-            il++;
-            Serial.print(".");
+            //il++;
+            //Serial.print(".");
             displayLCD.printFirstRow("Astept...");
-            analogWrite(intled, il);
+            //analogWrite(intled, il);
             delay(500);
             if(il == 255){il=1;}
         }
-    il = 0;
-    analogWrite(intled, il);
+    //il = 0;
+    //analogWrite(intled, il);
+    initialized++;
     goto state_check_door_open;
+    }
+    else{goto state_check_door_closed;}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,9 +150,12 @@ void loop()
 state_search_zero:
     {
         displayLCD.printFirstRow("CENTRARE AX POT");
-        calibresult = httpExecute(calibrate);
-        Serial.print(calibresult);
-        if(calibresult == "PASS")
+        String calibresult = httpExecute("http://192.168.4.1/calibrate");
+        Serial.print("Rezultat centrare ax pote.");
+        Serial.println(calibresult);
+        const char* value = calibresult.c_str();
+        bool ismatch = (strcmp(value, pass)==0);
+        if(ismatch == true)
         {
             displayLCD.printSecondRowNoClear("AX CENTRAT");
             goto state_check_door_closed;
@@ -171,9 +181,6 @@ state_search_zero:
         int door_closed_state = digitalRead(PIN_Door);
         Serial.println("Door state is: " + String(door_closed_state));
         Serial.println("Checking if door is closed");
-        unsigned long time_of_checking_door_closed = millis();
-        const int stop_searching_door_closed = 990000;  // 10 secunde
-        bool error_searching_door_closed = false;
         while(door_closed_state == HIGH) 
         {
             Serial.println("Door is open");
@@ -182,29 +189,9 @@ state_search_zero:
             if(door_closed_state_check == LOW)     
             {
                 Serial.println("Door is closed");
-                delay(700);
                 analogWrite(PIN_LED_Green, 0);
                 goto state_activate_piston1;
             }
-            if (millis() - time_of_checking_door_closed >= stop_searching_door_closed) 
-            {
-                Serial.println("Timeout: " + String(stop_searching_door_closed/1000) + " seconds have elapsed since started checking if door is closed");
-                error_searching_door_closed = true;
-                break;
-            }
-        }
-        while(error_searching_door_closed == true)
-        {
-            Serial.println("Door not closed. PRESS CONFIRM FAIL & CLOSE THE DOOR !!!");
-            displayLCD.printBothRows("CONFIRMATI FAIL","TIMPUL A EXPIRAT");
-            analogWrite(PIN_Buzzer, 255);
-            analogWrite(PIN_LED_Red, 255);
-            analogWrite(PIN_Button_Fail_LED, 255);
-            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
-            {
-                Serial.println("Fail confirmed");
-                goto state_check_door_closed;
-            }         
         }
     }
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,7 +200,7 @@ state_search_zero:
     state_activate_piston1:
     {
         piston_controller.extendPiston1();
-        delay(500);
+        delay(400);
         displayLCD.printFirstRow("TESTARE...");
         Serial.println("Piston 1 activated");
         goto state_boardpower_activate;
@@ -225,7 +212,7 @@ state_search_zero:
     {
         analogWrite(PIN_Relay, 255);
         displayLCD.printSecondRowNoClear("ALIMENTARE UNITATE!");
-        delay(2000);
+        delay(1300);
         Serial.println("Boardpower activated");
         goto state_check_LED_RED;
     }
@@ -236,13 +223,16 @@ state_search_zero:
     {
         bool error_searching_led_RED = false;
         displayLCD.printSecondRowNoClear("TESTARE LED ROSU");
-        redLEDresult = httpExecute(checkRedLed);
-        if(redLEDresult == "PASS")
+        String redLEDresult = httpExecute("http://192.168.4.1/redled");
+        Serial.print("Rezultat verificare LED Rosu:");
+        Serial.println(redLEDresult);
+        bool ismatch = (redLEDresult == pass);
+        if(ismatch == true)
         {
             displayLCD.printSecondRowNoClear("LED ROSU OK");
             goto state_deactivate_piston1;
         } 
-        else if(redLEDresult == "FAIL")
+        else if(redLEDresult == fail)
         {
             error_searching_led_RED = true;
         }
@@ -253,7 +243,7 @@ state_search_zero:
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
-            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            if(digitalRead(PIN_Button_Fail_Switch) == LOW)
             {
                 Serial.println("Fail confirmed");
                 goto state_boardpower_deactivate;
@@ -280,13 +270,39 @@ state_search_zero:
         bool error_checking_voltage_MIN = false;
         Serial.println("Average of last voltage values: ");
         displayLCD.printSecondRowNoClear("TESTARE VAL. MIN");
-        minVoltresult = httpExecute(minimumVoltage);
-        if (minVoltresult == "PASS")
+        String minVoltresult = httpExecute("http://192.168.4.1/minimumvoltage");
+        Serial.print("Rezultat masuratoare tensiune minima:");
+        Serial.println(minVoltresult);
+        const char* value = minVoltresult.c_str();
+        Serial.print("value:");
+        Serial.println(value);
+
+        int blablav = strcmp(value,pass);
+        Serial.print("Blablav: ");
+        Serial.println(blablav);
+        bool ismatch = 0;
+
+        if(blablav == 0)
+        {
+            Serial.print("Blablav ESTE 0; String-uri la fel");
+            ismatch = 1;           
+        }
+        else if(blablav != 0)
+        {
+            Serial.print("Blablav NU ESTE 0; String-uri DIFERITE");
+            Serial.print("Blablav gresit: ");
+            Serial.println(blablav);
+            ismatch = 0;            
+        }
+
+        // bool ismatch = (strcmp(value, pass)==0);
+        Serial.println(ismatch);
+        if(ismatch == 1)
         {
             displayLCD.printSecondRowNoClear("VALOARE MIN OK");
             goto state_voltage_check_MAX;
         }
-        else if(minVoltresult == "FAIL")
+        else if(ismatch == 0)
         {
             error_checking_voltage_MIN == true;
         }
@@ -297,7 +313,7 @@ state_search_zero:
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
-            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            if(digitalRead(PIN_Button_Fail_Switch) == LOW)
             {
                 Serial.println("Fail confirmed");
                 goto state_boardpower_deactivate;
@@ -314,8 +330,11 @@ state_search_zero:
     {
         bool error_checking_voltage_MAX = false;
         displayLCD.printSecondRowNoClear("TESTARE VAL MAX");
-        maxVoltresult = httpExecute(maximumVoltage);
-        if (maxVoltresult == "PASS")
+        String maxVoltresult = httpExecute("http://192.168.4.1/maximumvoltage");
+        Serial.print("Rezultat masuratoare tensiune maxima:");
+        Serial.println(maxVoltresult);
+        bool ismatch = (maxVoltresult == pass);
+        if(ismatch == true)
         {
             displayLCD.printSecondRowNoClear("VALOARE MAX OK");
             goto state_activate_piston2;
@@ -331,7 +350,7 @@ state_search_zero:
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
-            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            if(digitalRead(PIN_Button_Fail_Switch) == LOW)
             {
                 Serial.println("Fail confirmed");
                 goto state_boardpower_deactivate;
@@ -347,7 +366,7 @@ state_search_zero:
     state_activate_piston2:
     {
         piston_controller.extendPiston2();
-        delay(500);
+        delay(200);
         displayLCD.printFirstRow("Piston 2 ON");
         Serial.println("Piston 2 activated");
         goto state_check_LED_YELLOW;
@@ -361,8 +380,11 @@ state_search_zero:
         unsigned long time_of_checking_led_yellow = millis();
         bool error_searching_led_YELLOW = false;
         displayLCD.printSecondRowNoClear("TESTARE LED GALB");
-        yellowLEDresult = httpExecute(chkYellowLED);
-        if (yellowLEDresult == "PASS")
+        String yellowLEDresult = httpExecute("http://192.168.4.1/yellowled");
+        Serial.print("Rezultat verificare LED Galben:");
+        Serial.println(yellowLEDresult);
+        bool ismatch = (yellowLEDresult == pass);
+        if(ismatch == true)
         {
             displayLCD.printSecondRowNoClear("LED GALBEN OK");
             goto state_deactivate_piston2;
@@ -378,7 +400,7 @@ state_search_zero:
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
-            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            if(digitalRead(PIN_Button_Fail_Switch) == LOW)
             {
                 Serial.println("Fail confirmed");
                 goto state_boardpower_deactivate;
@@ -404,8 +426,11 @@ state_search_zero:
         Serial.println("Beginning counting synchronmotor rotations");
         bool error_checking_optical_rotation = false;
         displayLCD.printSecondRowNoClear("TESTARE S-MOTOR");
-        syncroResult = httpExecute(checkSynchromotor);
-        if (syncroResult == "PASS")
+        String syncroResult = httpExecute("http://192.168.4.1/synchromotor");
+        Serial.print("Rezultat verificare synchromotor:");
+        Serial.println(syncroResult);
+        bool ismatch = (syncroResult == "PASS");
+        if(ismatch == true)
         {
             displayLCD.printSecondRowNoClear("SYNCHROMOTOR OK!");
             goto state_activate_piston3;
@@ -421,7 +446,7 @@ state_search_zero:
             analogWrite(PIN_Buzzer, 255);
             analogWrite(PIN_LED_Red, 255);
             analogWrite(PIN_Button_Fail_LED, 255);
-            if(digitalRead(PIN_Button_Fail_Switch) == HIGH)
+            if(digitalRead(PIN_Button_Fail_Switch) == LOW)
             {
                 Serial.println("Fail confirmed");
                 goto state_boardpower_deactivate;
@@ -470,11 +495,11 @@ state_search_zero:
         int door_final_state = digitalRead(PIN_Door);
         Serial.println("Final door state is: "+ String(door_final_state));
         Serial.println("Checking if door is closed");
-        while(door_final_state == HIGH)
+        while(door_final_state == LOW)
         {
             Serial.println("Door is closed. OPEN THE DOOR");
             int door_final_state_check = digitalRead(PIN_Door);
-            if(door_final_state_check == LOW)
+            if(door_final_state_check == HIGH)
             {
                 Serial.println("Door is open. PROCCESS COMPLETE");
                 goto state_check_door_closed;

@@ -16,25 +16,25 @@
 // #define PIN_Color_S3            23
 // #define PIN_Color_Out           39
 // #define PIN_Voltmeter           36
-// #define PIN_Optical_Count       34
+// #define PIN_Optical_Count       22
 // #define PIN_Microswitch         21
 // #define PIN_RegionSel           4
 
-// #define Volt_Min_UE_ll          95
-// #define Volt_Min_UE_lh          107
-// #define Volt_Min_US_ll          49
-// #define Volt_Min_US_lh          59
-// #define Volt_Max_UE_ll          220
-// #define Volt_Max_UE_lh          232
-// #define Volt_Max_US_ll          112
-// #define Volt_Max_US_lh          122
+// #define Volt_Min_UE_ll          89
+// #define Volt_Min_UE_lh          112
+// #define Volt_Min_US_ll          43
+// #define Volt_Min_US_lh          65
+// #define Volt_Max_UE_ll          214
+// #define Volt_Max_UE_lh          238
+// #define Volt_Max_US_ll          106
+// #define Volt_Max_US_lh          128
 
-// #define Button_Count_Limit_Presses      10
+// #define Button_Count_Limit_Presses      5
 // #define Button_Count_Limit_Time         30000
 // #define Voltage_Calibration             84
 // #define Voltage_Phase_Shift             1.7
 // #define Voltage_Measurements            80
-// #define Voltage_Samples                 20
+// #define Voltage_Samples                 80
 // int min_ll = 0;
 // int min_lh = 0;
 // int max_ll = 0;
@@ -93,6 +93,8 @@
 
 // String checkRedLed()
 // {
+//     myStepper.step(stepsCenterToLeft);
+//     delay(250);
 //     unsigned long time_of_checking_led_red = millis();
 //     const int stop_searching_led_red = 10000;  // 10 secunde
 //     bool error_searching_led_RED = false;
@@ -102,12 +104,12 @@
 //         int green_value1 = colorDetector.detectGreen();
 //         int blue_value1 = colorDetector.detectBlue();
 //         Serial.println("Red = " + String(red_value1) + "  Green = " + String(green_value1) + "  Blue = " + String(blue_value1));
-//         if(red_value1 > green_value1 && red_value1 > blue_value1)   // TODO: Calibrate and change to 0-255
+//         if(red_value1 > green_value1 && red_value1 > blue_value1 && red_value1 > 0)   // TODO: Calibrate and change to 0-255
 //         {
 //             Serial.println("RED LED ON");
 //             return pass;
 //         }
-//         else if (red_value1 > blue_value1 && green_value1 > blue_value1)
+//         else if (red_value1 > green_value1 && red_value1 > blue_value1 && red_value1 < 0)
 //         {
 //             Serial.println("YELLOW LED ON");
 //             return fail;
@@ -122,9 +124,8 @@
 
 // String checkMinVolt()
 //     {
-//         myStepper.step(stepsCenterToLeft);
-//         delay(150);
 //         float voltage_value_MIN = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
+//         Serial.println(voltage_value_MIN);
 //         if(voltage_value_MIN > min_ll && voltage_value_MIN < min_lh)
 //         {
 //             myStepper.step(stepsLeftToRight);
@@ -139,7 +140,10 @@
 
 // String checkMaxVolt()
 //     {
+//         Serial.println("Checking MAX Voltage");
+//         delay(400);
 //         float voltage_value_MAX = voltage_monitor.measureVoltage(Voltage_Measurements, Voltage_Samples);
+//         Serial.println(voltage_value_MAX);
 //         if(voltage_value_MAX >= max_ll && voltage_value_MAX <= max_lh)
 //         {
 //             myStepper.step(stepsRightToCenter);
@@ -163,12 +167,12 @@
 //         int green_value2 = colorDetector.detectGreen();
 //         int blue_value2 = colorDetector.detectBlue();
 //         Serial.println("Red = " + String(red_value2) + "  Green = " + String(green_value2) + "  Blue = " + String(blue_value2));
-//         if(red_value2 > green_value2 && red_value2 > blue_value2)   // TODO: Calibrate and change to 0-255
+//         if(red_value2 > green_value2 && red_value2 > blue_value2 && red_value2 > 0)   // TODO: Calibrate and change to 0-255
 //         {
 //             Serial.println("RED LED ON");
 //             return fail;
 //         }
-//         else if (red_value2 > blue_value2 && green_value2 > blue_value2)
+//         else if (red_value2 > green_value2 && red_value2 > blue_value2 && red_value2 < 0)
 //         {
 //             Serial.println("YELLOW LED ON");
 //             return pass;
